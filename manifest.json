@@ -1,0 +1,9 @@
+{
+  "id": "charcount-status",
+  "name": "Char Count Status",
+  "version": "1.0.0",
+  "minAppVersion": "1.5.0",
+  "description": "상태표시줄에 한글 기준 글자수/목표치/표기 전환 위젯",
+  "author": "덤삯 x 세미",
+  "isDesktopOnly": false
+}

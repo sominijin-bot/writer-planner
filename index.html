@@ -656,27 +656,39 @@ const ProjectModal = ({ proj, onClose }) => {
             </div>
 
             {/* 🧱 로그 입력 */}
-            <div className="flex gap-2 mb-4">
-              <input
-                id="currentWords"
-                type="number"
-                placeholder="현재 글자수"
-                className="p-2 border rounded-lg w-32"
-              />
-              <button
-                onClick={() => {
-                  const cur = Number(
-                    document.getElementById("currentWords").value || 0
-                  );
-                  if (cur <= 0) return alert("현재 글자수를 입력하세요!");
-                  addLog(cur);
-                  document.getElementById("currentWords").value = "";
-                }}
-                className="px-4 py-2 bg-indigo-500 text-white rounded-lg"
-              >
-                + 기록
-              </button>
-            </div>
+            {/* 🧱 로그 입력 + 오늘 총합 표시 */}
+<div className="flex items-center gap-3 mb-4">
+  <div className="flex gap-2 flex-grow">
+    <input
+      id="currentWords"
+      type="number"
+      placeholder="현재 글자수"
+      className="p-2 border rounded-lg w-32"
+    />
+    <button
+      onClick={() => {
+        const cur = Number(
+          document.getElementById("currentWords").value || 0
+        );
+        if (cur <= 0) return alert("현재 글자수를 입력하세요!");
+        addLog(cur);
+        document.getElementById("currentWords").value = "";
+      }}
+      className="px-4 py-2 bg-indigo-500 text-white rounded-lg"
+    >
+      + 기록
+    </button>
+  </div>
+
+  {/* 🔹 오늘 총합 표시 */}
+  <div className="text-sm font-semibold text-indigo-400 whitespace-nowrap">
+    오늘 총합:{" "}
+    <span className="text-indigo-300">
+      {totalWords.toLocaleString()}자
+    </span>
+  </div>
+</div>
+
 
            {/* 🧩 로그 목록 */}
 {(projectData.logs ?? []).length === 0 ? (
@@ -708,9 +720,7 @@ const ProjectModal = ({ proj, onClose }) => {
 
 
 
-            <div className="mt-3 text-right font-semibold text-indigo-600">
-              총합: {totalWords.toLocaleString()}자
-            </div>
+         
 
 {/* 📊 작품별 요약 통계 */}
 <div className={`${darkMode 

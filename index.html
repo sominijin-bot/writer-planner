@@ -747,7 +747,13 @@ const ProjectModal = ({ proj, onClose }) => {
             <span>{l.time}</span>
             <span>{l.diff.toLocaleString()}자</span>
             <button
-              onClick={() => removeLog(i)}
+              onClick={() => {
+  const originalIndex = projectData.logs.findIndex(
+    (x) => x.time === l.time && x.currentWords === l.currentWords
+  );
+  removeLog(originalIndex);
+}}
+
               className="text-xs text-red-500"
             >
               삭제

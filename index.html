@@ -1849,9 +1849,18 @@ onAuthStateChanged(auth, async (user) => {
     const snap = await getDoc(ref);
 
     if (snap.exists()) {
-      const cloudData = snap.data();
-      localStorage.setItem("writer_planner_store_v4", JSON.stringify(cloudData));
-      console.info("☁️ 클라우드 데이터 불러옴 (once)");
+  const cloudData = snap.data();
+
+  // ✅ 기존 플래너 데이터
+  if (cloudData.planner)
+    localStorage.setItem("writer_planner_store_v4", JSON.stringify(cloudData.planner));
+
+  // ✅ 계약 데이터
+  if (cloudData.contracts)
+    localStorage.setItem("writer_contracts_v1", JSON.stringify(cloudData.contracts));
+
+  console.info("☁️ 클라우드 데이터 불러옴 (planner + contracts)");
+
 
     } else {
       console.log("신규 사용자 — 기본 데이터 저장");
@@ -1860,10 +1869,13 @@ onAuthStateChanged(auth, async (user) => {
 
     // 💾 자동 백업
     setInterval(async () => {
-      const localData = JSON.parse(localStorage.getItem("writer_planner_store_v4") || "{}");
-      await setDoc(ref, localData);
-      console.log("✅ 클라우드 자동 백업 완료");
-    }, 30000);
+  const planner = JSON.parse(localStorage.getItem("writer_planner_store_v4") || "{}");
+  const contracts = JSON.parse(localStorage.getItem("writer_contracts_v1") || "[]");
+
+  await setDoc(ref, { planner, contracts });
+  console.log("✅ 클라우드 자동 백업 완료 (planner + contracts)");
+}, 30000);
+
 
     // ✅ 로그인 후에만 React 앱 실행
     if (!window.reactStarted) {

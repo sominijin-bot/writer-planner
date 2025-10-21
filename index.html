@@ -203,7 +203,7 @@
 
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script type="text/babel" data-presets="env,react">
       const { useState, useEffect, useMemo } = React;
 
       const PROJECTS = [
@@ -240,6 +240,221 @@ function parseKoreanTime(str) {
   if (ampm === "오후" && hh !== 12) hh += 12;
   if (ampm === "오전" && hh === 12) hh = 0;
   return hh * 60 + mm; // 분 단위
+}
+
+function ContractSection({ darkMode }) {
+  const [contracts, setContracts] = React.useState(() => {
+    const raw = localStorage.getItem("writer_contracts_v1");
+    return raw ? JSON.parse(raw) : [];
+  });
+
+  const emptyContract = {
+    title: "",
+    publisher: "",
+    label: "",
+    contractDate: "",
+    finishDate: "",
+    releaseDate: "",
+    payDay1: "",
+    payDay2: "",
+  };
+
+  const [newC, setNewC] = React.useState(emptyContract);
+  const [editingIndex, setEditingIndex] = React.useState(null);
+
+  const saveContracts = (data) => {
+    setContracts(data);
+    localStorage.setItem("writer_contracts_v1", JSON.stringify(data));
+  };
+
+  const addContract = () => {
+    if (!newC.title) return alert("작품명을 입력하세요.");
+    let updated = [...contracts];
+    if (editingIndex !== null) {
+      updated[editingIndex] = newC;
+      setEditingIndex(null);
+    } else {
+      updated = [...contracts, newC];
+    }
+    saveContracts(updated);
+    setNewC(emptyContract);
+  };
+
+  const removeContract = (i) => {
+    const updated = [...contracts];
+    updated.splice(i, 1);
+    saveContracts(updated);
+  };
+
+  const editContract = (i) => {
+    setNewC(contracts[i]);
+    setEditingIndex(i);
+  };
+
+  return (
+    <div
+      className={`${
+        darkMode
+          ? "bg-gray-850 text-gray-200 border-gray-700"
+          : "bg-white text-gray-900 border-gray-200"
+      } p-4 rounded-lg mb-6`}
+    >
+      <h2 className="font-semibold text-lg mb-4">📑 계약 관리</h2>
+
+      <div className="space-y-4">
+        {/* 입력 폼 */}
+        <div className="space-y-3">
+          <div className="grid md:grid-cols-3 gap-4 text-sm">
+            {[
+              { label: "작품명", key: "title" },
+              { label: "출판사", key: "publisher" },
+              { label: "레이블", key: "label" },
+            ].map((f) => (
+              <div key={f.key} className="flex flex-col">
+                <label className="text-xs font-semibold text-indigo-300 mb-1">
+                  {f.label}
+                </label>
+                <input
+                  type="text"
+                  value={newC[f.key]}
+                  onChange={(e) =>
+                    setNewC({ ...newC, [f.key]: e.target.value })
+                  }
+                  className="p-2 border rounded w-full"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-4 text-sm">
+            <div className="flex flex-col">
+              <label className="text-xs font-semibold text-indigo-300 mb-1">
+                계약일
+              </label>
+              <input
+                type="date"
+                value={newC.contractDate}
+                onChange={(e) =>
+                  setNewC({ ...newC, contractDate: e.target.value })
+                }
+                className="p-2 border rounded w-full"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs font-semibold text-indigo-300 mb-1">
+                완고일
+              </label>
+              <input
+                type="date"
+                value={newC.finishDate}
+                onChange={(e) =>
+                  setNewC({ ...newC, finishDate: e.target.value })
+                }
+                className="p-2 border rounded w-full"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs font-semibold text-indigo-300 mb-1">
+                출간일
+              </label>
+              <input
+                type="date"
+                value={newC.releaseDate}
+                onChange={(e) =>
+                  setNewC({ ...newC, releaseDate: e.target.value })
+                }
+                className="p-2 border rounded w-full"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs font-semibold text-indigo-300 mb-1">
+                정산일 (매월)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  placeholder="정산1"
+                  value={newC.payDay1}
+                  onChange={(e) =>
+                    setNewC({ ...newC, payDay1: e.target.value })
+                  }
+                  className="p-2 border rounded w-full"
+                />
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  placeholder="정산2"
+                  value={newC.payDay2}
+                  onChange={(e) =>
+                    setNewC({ ...newC, payDay2: e.target.value })
+                  }
+                  className="p-2 border rounded w-full"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={addContract}
+          className="px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm"
+        >
+          {editingIndex !== null ? "✓ 수정 완료" : "+ 계약 추가"}
+        </button>
+
+        {contracts.length === 0 ? (
+          <p className="text-sm text-gray-500">등록된 계약이 없습니다.</p>
+        ) : (
+          <table className="w-full text-sm mt-3 border-collapse">
+            <thead>
+              <tr className="border-b text-indigo-300">
+                <th>작품명</th>
+                <th>출판사</th>
+                <th>레이블</th>
+                <th>계약</th>
+                <th>완고</th>
+                <th>출간</th>
+                <th>정산1</th>
+                <th>정산2</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {contracts.map((c, i) => (
+                <tr key={i} className="border-b hover:bg-gray-800">
+                  <td>{c.title}</td>
+                  <td>{c.publisher}</td>
+                  <td>{c.label}</td>
+                  <td>{c.contractDate}</td>
+                  <td>{c.finishDate}</td>
+                  <td>{c.releaseDate}</td>
+                  <td>{c.payDay1 && `매월 ${c.payDay1}일`}</td>
+                  <td>{c.payDay2 && `매월 ${c.payDay2}일`}</td>
+                  <td className="text-right space-x-2">
+                    <button
+                      onClick={() => editContract(i)}
+                      className="text-indigo-400 text-xs"
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={() => removeContract(i)}
+                      className="text-red-400 text-xs"
+                    >
+                      삭제
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
 }
 
 
@@ -591,7 +806,9 @@ const ProjectModal = ({ proj, onClose }) => {
 >
 
             <h1 className="text-2xl sm:text-3xl font-bold mb-6">작가용 작업 플래너</h1>
-<div className="flex justify-end mb-4">
+{/* 🌗 라이트모드 + 북마크 버튼바 */}
+<div className="flex flex-wrap items-center justify-between mb-4">
+  {/* 라이트모드 버튼 */}
   <button
     onClick={() => setDarkMode(!darkMode)}
     className={`px-4 py-2 rounded-lg transition ${
@@ -602,45 +819,87 @@ const ProjectModal = ({ proj, onClose }) => {
   >
     {darkMode ? "☀️ 라이트모드" : "🌙 다크모드"}
   </button>
+
+  {/* 📍 북마크 버튼 */}
+  <div className="flex gap-2">
+    <button
+      onClick={() =>
+        document.getElementById("log-section")?.scrollIntoView({ behavior: "smooth" })
+      }
+      className={`px-3 py-1 text-sm rounded-lg transition
+  ${darkMode
+    ? "bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600"
+    : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
+  }`}
+    >
+      로그
+    </button>
+    <button
+      onClick={() =>
+        document.getElementById("monthly-section")?.scrollIntoView({ behavior: "smooth" })
+      }
+      className={`px-3 py-1 text-sm rounded-lg transition
+  ${darkMode
+    ? "bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600"
+    : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
+  }`}
+    >
+      월간
+    </button>
+    <button
+      onClick={() =>
+        document.getElementById("contract-section")?.scrollIntoView({ behavior: "smooth" })
+      }
+      className={`px-3 py-1 text-sm rounded-lg transition
+  ${darkMode
+    ? "bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600"
+    : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
+  }`}
+    >
+      계약
+    </button>
+  </div>
 </div>
+
 
 
            
 
-            {/* 🔸 날짜 선택 */}
-            <div className="flex items-center gap-2 mb-4">
-              <button
-                onClick={() => nextDay(-1)}
-                className="px-3 py-1 bg-gray-200 rounded-lg"
-              >
-                ◀
-              </button>
-              <input
-                type="date"
-                value={dateStr}
-                onChange={(e) => setDateStr(e.target.value)}
-                className="border rounded-lg p-2"
-              />
-              <button
-                onClick={() => nextDay(1)}
-                className="px-3 py-1 bg-gray-200 rounded-lg"
-              >
-                ▶
-              </button>
-            </div>
+            {/* 🔸 날짜 + 작품 선택 (한 줄 정렬) */}
+<div className="flex flex-wrap items-center gap-3 mb-4">
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => nextDay(-1)}
+      className="px-3 py-1 bg-gray-200 rounded-lg"
+    >
+      ◀
+    </button>
+    <input
+      type="date"
+      value={dateStr}
+      onChange={(e) => setDateStr(e.target.value)}
+      className="border rounded-lg p-2"
+    />
+    <button
+      onClick={() => nextDay(1)}
+      className="px-3 py-1 bg-gray-200 rounded-lg"
+    >
+      ▶
+    </button>
+  </div>
 
-            {/* 🔸 작품 선택 */}
-            <div className="mb-4">
-              <select
-                value={filterProject}
-                onChange={(e) => setFilterProject(e.target.value)}
-                className="p-2 border rounded-lg"
-              >
-                {PROJECTS.map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-              </select>
-            </div>
+  {/* 🔸 작품 드롭다운을 오른쪽에 배치 */}
+  <select
+    value={filterProject}
+    onChange={(e) => setFilterProject(e.target.value)}
+    className="p-2 border rounded-lg min-w-[160px]"
+  >
+    {PROJECTS.map((p) => (
+      <option key={p}>{p}</option>
+    ))}
+  </select>
+</div>
+
 
             {/* 🌅 작품별 시작 정보 */}
             <div className={`${darkMode ? "bg-gray-850 text-gray-200 border border-gray-700" : "bg-indigo-50 text-gray-900 border border-gray-200"} p-4 rounded-lg mb-4`}>
@@ -682,7 +941,11 @@ const ProjectModal = ({ proj, onClose }) => {
 
             {/* 🧱 로그 입력 */}
             {/* 🧱 로그 입력 + 오늘 총합 표시 */}
-<div className="flex items-center gap-3 mb-4">
+           <div
+  id="log-section"
+  className="flex items-center gap-3 mb-4"
+>
+
   <div className="flex gap-2 flex-grow">
     <input
       id="currentWords"
@@ -864,11 +1127,11 @@ const ProjectModal = ({ proj, onClose }) => {
   })()}
 </div>
 {/* 📅 월간 / 연간 누적 통계 */}
-<div className={`${darkMode 
-  ? "bg-gray-850 text-gray-200 border-gray-700" 
-  : "bg-white text-gray-900 border-gray-200"} p-4 rounded-lg`}>
-
-
+<div id="monthly-section"
+  className={`${darkMode 
+    ? "bg-gray-850 text-gray-200 border-gray-700" 
+    : "bg-white text-gray-900 border-gray-200"} p-4 rounded-lg`}
+>
 
   <h2 className="font-semibold text-lg mb-4">📅 월간 · 연간 누적 통계</h2>
 
@@ -1580,315 +1843,113 @@ const ProjectModal = ({ proj, onClose }) => {
 
 </div>
 
-<ContractSection darkMode={darkMode} />
+ 
 
+{/* 📑 계약 관리 섹션 */}
+<div id="contract-section">
+  <ContractSection darkMode={darkMode} />
+</div>
+{/* 전체 래퍼 닫기 */}
+</div>
 
-
-          </div>
-        );
-      }
-
-// 📑 계약 관리 컴포넌트
-function ContractSection({ darkMode }) {
-  const [contracts, setContracts] = React.useState(() => {
-    const raw = localStorage.getItem("writer_contracts_v1");
-    return raw ? JSON.parse(raw) : [];
-  });
-
-  const emptyContract = {
-    title: "",
-    publisher: "",
-    label: "",
-    contractDate: "",
-    finishDate: "",
-    releaseDate: "",
-    payDay1: "",
-    payDay2: "",
-  };
-
-  const [newC, setNewC] = React.useState(emptyContract);
-  const [editingIndex, setEditingIndex] = React.useState(null);
-
-  const saveContracts = (data) => {
-    setContracts(data);
-    localStorage.setItem("writer_contracts_v1", JSON.stringify(data));
-  };
-
-  const addContract = () => {
-    if (!newC.title) return alert("작품명을 입력하세요.");
-    let updated = [...contracts];
-    if (editingIndex !== null) {
-      updated[editingIndex] = newC;
-      setEditingIndex(null);
-    } else {
-      updated = [...contracts, newC];
-    }
-    saveContracts(updated);
-    setNewC(emptyContract);
-  };
-
-  const removeContract = (i) => {
-    const updated = [...contracts];
-    updated.splice(i, 1);
-    saveContracts(updated);
-  };
-
-  const editContract = (i) => {
-    setNewC(contracts[i]);
-    setEditingIndex(i);
-  };
-
-  return (
-    <div
-      className={`${
-        darkMode
-          ? "bg-gray-850 text-gray-200 border-gray-700"
-          : "bg-white text-gray-900 border-gray-200"
-      } p-4 rounded-lg mb-6`}
-    >
-      <h2 className="font-semibold text-lg mb-4">📑 계약 관리</h2>
-
-      <div className="space-y-4">
-        {/* 입력 폼 */}
-        <div className="space-y-3">
-          <div className="grid md:grid-cols-3 gap-4 text-sm">
-            {[
-              { label: "작품명", key: "title" },
-              { label: "출판사", key: "publisher" },
-              { label: "레이블", key: "label" },
-            ].map((f) => (
-              <div key={f.key} className="flex flex-col">
-                <label className="text-xs font-semibold text-indigo-300 mb-1">
-                  {f.label}
-                </label>
-                <input
-                  type="text"
-                  value={newC[f.key]}
-                  onChange={(e) =>
-                    setNewC({ ...newC, [f.key]: e.target.value })
-                  }
-                  className="p-2 border rounded w-full"
-                />
-              </div>
-            ))}
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-4 text-sm">
-            <div className="flex flex-col">
-              <label className="text-xs font-semibold text-indigo-300 mb-1">
-                계약일
-              </label>
-              <input
-                type="date"
-                value={newC.contractDate}
-                onChange={(e) =>
-                  setNewC({ ...newC, contractDate: e.target.value })
-                }
-                className="p-2 border rounded w-full"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-xs font-semibold text-indigo-300 mb-1">
-                완고일
-              </label>
-              <input
-                type="date"
-                value={newC.finishDate}
-                onChange={(e) =>
-                  setNewC({ ...newC, finishDate: e.target.value })
-                }
-                className="p-2 border rounded w-full"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-xs font-semibold text-indigo-300 mb-1">
-                출간일
-              </label>
-              <input
-                type="date"
-                value={newC.releaseDate}
-                onChange={(e) =>
-                  setNewC({ ...newC, releaseDate: e.target.value })
-                }
-                className="p-2 border rounded w-full"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-xs font-semibold text-indigo-300 mb-1">
-                정산일 (매월)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  max="31"
-                  placeholder="정산1"
-                  value={newC.payDay1}
-                  onChange={(e) =>
-                    setNewC({ ...newC, payDay1: e.target.value })
-                  }
-                  className="p-2 border rounded w-full"
-                />
-                <input
-                  type="number"
-                  min="1"
-                  max="31"
-                  placeholder="정산2"
-                  value={newC.payDay2}
-                  onChange={(e) =>
-                    setNewC({ ...newC, payDay2: e.target.value })
-                  }
-                  className="p-2 border rounded w-full"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={addContract}
-          className="px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm"
-        >
-          {editingIndex !== null ? "✓ 수정 완료" : "+ 계약 추가"}
-        </button>
-
-        {contracts.length === 0 ? (
-          <p className="text-sm text-gray-500">등록된 계약이 없습니다.</p>
-        ) : (
-          <table className="w-full text-sm mt-3 border-collapse">
-            <thead>
-              <tr className="border-b text-indigo-300">
-                <th>작품명</th>
-                <th>출판사</th>
-                <th>레이블</th>
-                <th>계약</th>
-                <th>완고</th>
-                <th>출간</th>
-                <th>정산1</th>
-                <th>정산2</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {contracts.map((c, i) => (
-                <tr key={i} className="border-b hover:bg-gray-800">
-                  <td>{c.title}</td>
-                  <td>{c.publisher}</td>
-                  <td>{c.label}</td>
-                  <td>{c.contractDate}</td>
-                  <td>{c.finishDate}</td>
-                  <td>{c.releaseDate}</td>
-                  <td>{c.payDay1 && `매월 ${c.payDay1}일`}</td>
-                  <td>{c.payDay2 && `매월 ${c.payDay2}일`}</td>
-                  <td className="text-right space-x-2">
-                    <button
-                      onClick={() => editContract(i)}
-                      className="text-indigo-400 text-xs"
-                    >
-                      수정
-                    </button>
-                    <button
-                      onClick={() => removeContract(i)}
-                      className="text-red-400 text-xs"
-                    >
-                      삭제
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
+);
 }
+
 
   window.PlannerApp = PlannerApp;
     
 
     </script>
-<!-- ⚡ Firebase 로그인 상태 확인 후 React 렌더링 -->
+<!-- ⚡ Firebase 로그인 상태 확인 후 React 렌더링 (ES Modules) -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDDaQFVkQMG63wI7guyMPygx9QwaokMu7I",
-  authDomain: "writer-planner.firebaseapp.com",
-  projectId: "writer-planner",
-  storageBucket: "writer-planner.firebasestorage.app",
-  messagingSenderId: "590639652717",
-  appId: "1:590639652717:web:bc69fa99d82f6c5e760464"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyDDaQFVkQMG63wI7guyMPygx9QwaokMu7I",
+    authDomain: "writer-planner.firebaseapp.com",
+    projectId: "writer-planner",
+    storageBucket: "writer-planner.firebasestorage.app",
+    messagingSenderId: "590639652717",
+    appId: "1:590639652717:web:bc69fa99d82f6c5e760464"
+  };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
 
-// 로그인 버튼
-const loginButton = document.createElement("button");
-loginButton.innerText = "🔑 Google 로그인";
-loginButton.className = "fixed bottom-5 right-5 bg-indigo-500 text-white px-4 py-2 rounded-lg shadow";
-document.body.appendChild(loginButton);
+  // 로그인 버튼
+  const loginButton = document.createElement("button");
+  loginButton.innerText = "🔑 Google 로그인";
+  loginButton.className = "fixed bottom-5 right-5 bg-indigo-500 text-white px-4 py-2 rounded-lg shadow";
+  document.body.appendChild(loginButton);
 
-// 로그인
-loginButton.onclick = () => signInWithPopup(auth, provider);
+  // 로그인
+  loginButton.onclick = () => signInWithPopup(auth, provider);
 
-// 로그인 상태 감시
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
- if (window.cloudLoaded) return;  // ✅ 이미 실행됐다면 중복 방지
-    window.cloudLoaded = true;       // ✅ 첫 실행 시 플래그 설정
-    loginButton.innerText = `👋 ${user.displayName}님`;
-    loginButton.disabled = true;
+ // ✅ 스크롤 맨 위로 버튼
+const scrollTopButton = document.createElement("button");
+scrollTopButton.innerText = "⬆️";
+scrollTopButton.title = "맨 위로";
+scrollTopButton.className =
+  "fixed bottom-[4.5rem] right-5 bg-gray-700 text-white px-3 py-2 rounded-full shadow hover:bg-gray-600 transition";
+document.body.appendChild(scrollTopButton);
+scrollTopButton.onclick = () =>
+  window.scrollTo({ top: 0, behavior: "smooth" });
 
-    const ref = doc(db, "users", user.uid);
-    const snap = await getDoc(ref);
 
-    if (snap.exists()) {
-  const cloudData = snap.data();
+  // 로그인 상태 감시
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      if (window.cloudLoaded) return;
+      window.cloudLoaded = true;
 
-  // ✅ 기존 플래너 데이터
-  if (cloudData.planner)
-    localStorage.setItem("writer_planner_store_v4", JSON.stringify(cloudData.planner));
+      loginButton.innerText = `👋 ${user.displayName}님`;
+      loginButton.disabled = true;
 
-  // ✅ 계약 데이터
-  if (cloudData.contracts)
-    localStorage.setItem("writer_contracts_v1", JSON.stringify(cloudData.contracts));
+      const ref = doc(db, "users", user.uid);
+      const snap = await getDoc(ref);
 
-  console.info("☁️ 클라우드 데이터 불러옴 (planner + contracts)");
+      if (snap.exists()) {
+        const cloudData = snap.data();
+        if (cloudData.planner)   localStorage.setItem("writer_planner_store_v4", JSON.stringify(cloudData.planner));
+        if (cloudData.contracts) localStorage.setItem("writer_contracts_v1", JSON.stringify(cloudData.contracts));
+        console.info("☁️ 클라우드 데이터 불러옴 (planner + contracts)");
+      } else {
+        // 새 사용자라면 빈 문서 생성
+        await setDoc(ref, {});
+      }
 
+      // 자동 백업
+      setInterval(async () => {
+        const planner   = JSON.parse(localStorage.getItem("writer_planner_store_v4") || "{}");
+        const contracts = JSON.parse(localStorage.getItem("writer_contracts_v1") || "[]");
+        await setDoc(ref, { planner, contracts });
+        console.log("✅ 클라우드 자동 백업 완료 (planner + contracts)");
+      }, 30000);
+
+      // ✅ 로그인 후에만 React 앱 실행
+if (!window.reactStarted) {
+  window.reactStarted = true;
+
+  // 🔹 Babel 변환이 끝났는지 확인 후 실행
+  const waitForPlannerApp = setInterval(() => {
+    if (window.PlannerApp) {
+      clearInterval(waitForPlannerApp);
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(React.createElement(window.PlannerApp));
+    }
+  }, 200);
+}
 
     } else {
-      console.log("신규 사용자 — 기본 데이터 저장");
-      await setDoc(ref, {});
+      console.log("로그인 필요");
     }
-
-    // 💾 자동 백업
-    setInterval(async () => {
-  const planner = JSON.parse(localStorage.getItem("writer_planner_store_v4") || "{}");
-  const contracts = JSON.parse(localStorage.getItem("writer_contracts_v1") || "[]");
-
-  await setDoc(ref, { planner, contracts });
-  console.log("✅ 클라우드 자동 백업 완료 (planner + contracts)");
-}, 30000);
-
-
-    // ✅ 로그인 후에만 React 앱 실행
-    if (!window.reactStarted) {
-      window.reactStarted = true;
-     const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(React.createElement(window.PlannerApp));
-
-    }
-  } else {
-    console.log("로그인 필요");
-  }
-});
+  });
 </script>
+
 
 
   </body>

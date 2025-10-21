@@ -1580,75 +1580,82 @@ const ProjectModal = ({ proj, onClose }) => {
 
 </div>
 
-{/* 📑 계약 관리 섹션 */}
-<div
-  className={`${
-    darkMode
-      ? "bg-gray-850 text-gray-200 border-gray-700"
-      : "bg-white text-gray-900 border-gray-200"
-  } p-4 rounded-lg mb-6`}
->
-  <h2 className="font-semibold text-lg mb-4">📑 계약 관리</h2>
+<ContractSection darkMode={darkMode} />
 
-  {(() => {
-    const [contracts, setContracts] = useState(() => {
-      const raw = localStorage.getItem("writer_contracts_v1");
-      return raw ? JSON.parse(raw) : [];
-    });
 
-    const emptyContract = {
-      title: "",
-      publisher: "",
-      label: "",
-      contractDate: "",
-      finishDate: "",
-      releaseDate: "",
-      payDay1: "",
-      payDay2: "",
-    };
 
-    const [newC, setNewC] = useState(emptyContract);
-    const [editingIndex, setEditingIndex] = useState(null);
-
-    const saveContracts = (data) => {
-      setContracts(data);
-      localStorage.setItem("writer_contracts_v1", JSON.stringify(data));
-    };
-
-    const addContract = () => {
-      if (!newC.title) return alert("작품명을 입력하세요.");
-      let updated = [...contracts];
-      if (editingIndex !== null) {
-        updated[editingIndex] = newC;
-        setEditingIndex(null);
-      } else {
-        updated = [...contracts, newC];
+          </div>
+        );
       }
-      saveContracts(updated);
-      setNewC(emptyContract);
-    };
 
-    const removeContract = (i) => {
-      const updated = [...contracts];
-      updated.splice(i, 1);
-      saveContracts(updated);
-    };
+// 📑 계약 관리 컴포넌트
+function ContractSection({ darkMode }) {
+  const [contracts, setContracts] = React.useState(() => {
+    const raw = localStorage.getItem("writer_contracts_v1");
+    return raw ? JSON.parse(raw) : [];
+  });
 
-    const editContract = (i) => {
-      setNewC(contracts[i]);
-      setEditingIndex(i);
-    };
+  const emptyContract = {
+    title: "",
+    publisher: "",
+    label: "",
+    contractDate: "",
+    finishDate: "",
+    releaseDate: "",
+    payDay1: "",
+    payDay2: "",
+  };
 
-    return (
+  const [newC, setNewC] = React.useState(emptyContract);
+  const [editingIndex, setEditingIndex] = React.useState(null);
+
+  const saveContracts = (data) => {
+    setContracts(data);
+    localStorage.setItem("writer_contracts_v1", JSON.stringify(data));
+  };
+
+  const addContract = () => {
+    if (!newC.title) return alert("작품명을 입력하세요.");
+    let updated = [...contracts];
+    if (editingIndex !== null) {
+      updated[editingIndex] = newC;
+      setEditingIndex(null);
+    } else {
+      updated = [...contracts, newC];
+    }
+    saveContracts(updated);
+    setNewC(emptyContract);
+  };
+
+  const removeContract = (i) => {
+    const updated = [...contracts];
+    updated.splice(i, 1);
+    saveContracts(updated);
+  };
+
+  const editContract = (i) => {
+    setNewC(contracts[i]);
+    setEditingIndex(i);
+  };
+
+  return (
+    <div
+      className={`${
+        darkMode
+          ? "bg-gray-850 text-gray-200 border-gray-700"
+          : "bg-white text-gray-900 border-gray-200"
+      } p-4 rounded-lg mb-6`}
+    >
+      <h2 className="font-semibold text-lg mb-4">📑 계약 관리</h2>
+
       <div className="space-y-4">
         {/* 입력 폼 */}
         <div className="space-y-3">
-          {/* 첫 줄: 기본 정보 */}
           <div className="grid md:grid-cols-3 gap-4 text-sm">
             {[
-              { label: "작품명", key: "title", type: "text" },
-              { label: "출판사", key: "publisher", type: "text" },
-              { label: "레이블", key: "label", type: "text" },
+              { label: "작품명", key: "title" },
+              { label: "출판사", key: "publisher" },
+              { label: "레이블", key: "label" },
             ].map((f) => (
               <div key={f.key} className="flex flex-col">
                 <label className="text-xs font-semibold text-indigo-300 mb-1">
@@ -1666,7 +1673,6 @@ const ProjectModal = ({ proj, onClose }) => {
             ))}
           </div>
 
-          {/* 두 번째 줄: 날짜 관련 */}
           <div className="grid md:grid-cols-4 gap-4 text-sm">
             <div className="flex flex-col">
               <label className="text-xs font-semibold text-indigo-300 mb-1">
@@ -1739,7 +1745,6 @@ const ProjectModal = ({ proj, onClose }) => {
           </div>
         </div>
 
-        {/* 버튼 */}
         <button
           onClick={addContract}
           className="px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm"
@@ -1747,7 +1752,6 @@ const ProjectModal = ({ proj, onClose }) => {
           {editingIndex !== null ? "✓ 수정 완료" : "+ 계약 추가"}
         </button>
 
-        {/* 목록 */}
         {contracts.length === 0 ? (
           <p className="text-sm text-gray-500">등록된 계약이 없습니다.</p>
         ) : (
@@ -1796,14 +1800,9 @@ const ProjectModal = ({ proj, onClose }) => {
           </table>
         )}
       </div>
-    );
-  })()}
-</div>
-
-
-          </div>
-        );
-      }
+    </div>
+  );
+}
 
   window.PlannerApp = PlannerApp;
     

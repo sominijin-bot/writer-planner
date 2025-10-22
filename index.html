@@ -1912,23 +1912,28 @@ scrollTopButton.onclick = () =>
       const ref = doc(db, "users", user.uid);
       const snap = await getDoc(ref);
 
-      if (snap.exists()) {
+            if (snap.exists()) {
         const cloudData = snap.data();
-        if (cloudData.planner)   localStorage.setItem("writer_planner_store_v4", JSON.stringify(cloudData.planner));
-        if (cloudData.contracts) localStorage.setItem("writer_contracts_v1", JSON.stringify(cloudData.contracts));
-        console.info("☁️ 클라우드 데이터 불러옴 (planner + contracts)");
+        if (cloudData.planner)
+          localStorage.setItem("writer_planner_store_v4", JSON.stringify(cloudData.planner));
+        if (cloudData.contracts)
+          localStorage.setItem("writer_contracts_v1", JSON.stringify(cloudData.contracts));
+        if (cloudData.targets) // ✅ 추가
+          localStorage.setItem("writer_targets", JSON.stringify(cloudData.targets)); // ✅ 추가
+        console.info("☁️ 클라우드 데이터 불러옴 (planner + contracts + targets)"); // ✅ 문구 수정
       } else {
-        // 새 사용자라면 빈 문서 생성
         await setDoc(ref, {});
       }
 
-      // 자동 백업
+      // ✅ 자동 백업 (목표 포함)
       setInterval(async () => {
         const planner   = JSON.parse(localStorage.getItem("writer_planner_store_v4") || "{}");
         const contracts = JSON.parse(localStorage.getItem("writer_contracts_v1") || "[]");
-        await setDoc(ref, { planner, contracts });
-        console.log("✅ 클라우드 자동 백업 완료 (planner + contracts)");
+        const targets   = JSON.parse(localStorage.getItem("writer_targets") || "{}"); // ✅ 추가
+        await setDoc(ref, { planner, contracts, targets }); // ✅ targets 포함
+        console.log("✅ 클라우드 자동 백업 완료 (planner + contracts + targets)"); // ✅ 문구 수정
       }, 30000);
+
 
       // ✅ 로그인 후에만 React 앱 실행
 if (!window.reactStarted) {

@@ -248,6 +248,7 @@ function CalendarSection({ darkMode }) {
   });
   const [selectedDate, setSelectedDate] = React.useState(null);
 
+
   React.useEffect(() => {
     localStorage.setItem("calendar_tasks", JSON.stringify(tasks));
   }, [tasks]);
@@ -2094,6 +2095,16 @@ className={`${darkMode
       return JSON.parse(localStorage.getItem("writer_royalties") || "[]");
     });
 const [showTable, setShowTable] = React.useState(true);
+  // 🔄 Firebase에서 인세 데이터 갱신 시 화면 업데이트
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      const latest = JSON.parse(localStorage.getItem("writer_royalties") || "[]");
+      setRoyalties(latest);
+    };
+    window.addEventListener("royaltyDataUpdated", handleUpdate);
+    return () => window.removeEventListener("royaltyDataUpdated", handleUpdate);
+  }, []);
+
 
     const emptyRow = {
       date: "",
@@ -2601,8 +2612,12 @@ scrollTopButton.onclick = () =>
           localStorage.setItem("writer_contracts_v1", JSON.stringify(cloudData.contracts));
           if (cloudData.calendar)
   localStorage.setItem("calendar_tasks", JSON.stringify(cloudData.calendar));
-if (cloudData.royalties)
+if (cloudData.royalties) {
   localStorage.setItem("writer_royalties", JSON.stringify(cloudData.royalties));
+  // 🔹 화면에서도 즉시 반영되도록 이벤트 발생
+  window.dispatchEvent(new Event("royaltyDataUpdated"));
+}
+
 
         if (cloudData.targets) // ✅ 추가
           localStorage.setItem("writer_targets", JSON.stringify(cloudData.targets)); // ✅ 추가

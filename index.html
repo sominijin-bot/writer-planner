@@ -2243,7 +2243,7 @@ const [showTable, setShowTable] = React.useState(true);
       </p>
     );
 
-  // ✅ 현재 월 / 전월 계산
+  // 📅 현재 월 / 전월 계산
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(
     now.getMonth() + 1
@@ -2252,6 +2252,7 @@ const [showTable, setShowTable] = React.useState(true);
     now.getMonth()
   ).padStart(2, "0")}`;
 
+  // 💰 이번 달 / 지난달 실입금액 합계
   const monthSum = royalties
     .filter((r) => r.date.startsWith(thisMonth))
     .reduce((sum, r) => sum + Number(r.net || 0), 0);
@@ -2259,20 +2260,26 @@ const [showTable, setShowTable] = React.useState(true);
     .filter((r) => r.date.startsWith(lastMonth))
     .reduce((sum, r) => sum + Number(r.net || 0), 0);
 
-  // ✅ 연도별 합계 계산
-  const yearSum = royalties
-    .filter(
-      (r) => new Date(r.date).getFullYear() === new Date().getFullYear()
-    )
-    .reduce((sum, r) => sum + Number(r.net || 0), 0);
+  // 📆 연도별 데이터
+  const currentYear = now.getFullYear();
+  const thisYearData = royalties.filter(
+    (r) => new Date(r.date).getFullYear() === currentYear
+  );
 
-  const yearTax = royalties
-    .filter(
-      (r) => new Date(r.date).getFullYear() === new Date().getFullYear()
-    )
-    .reduce((sum, r) => sum + Number(r.tax || 0), 0);
+  const yearGross = thisYearData.reduce(
+    (sum, r) => sum + Number(r.amount || 0),
+    0
+  ); // 정산 금액 합계
+  const yearTax = thisYearData.reduce(
+    (sum, r) => sum + Number(r.tax || 0),
+    0
+  ); // 세액 합계
+  const yearNet = thisYearData.reduce(
+    (sum, r) => sum + Number(r.net || 0),
+    0
+  ); // 실입금액 합계
 
-  // ✅ 증감률 계산
+  // 📈 증감률 계산
   const diff =
     lastMonthSum > 0 ? ((monthSum - lastMonthSum) / lastMonthSum) * 100 : null;
   const diffText =
@@ -2291,16 +2298,21 @@ const [showTable, setShowTable] = React.useState(true);
         {monthSum.toLocaleString()} 원
       </span>{" "}
       {diffText} ·{" "}
-      <span className="font-semibold text-green-400">
-        연도 누적: {yearSum.toLocaleString()} 원
+      <span className="font-semibold text-sky-400">
+        연도 총 정산금액: {yearGross.toLocaleString()} 원
       </span>{" "}
-      / 세액 합계:{" "}
+      /{" "}
       <span className="font-semibold text-yellow-400">
-        {yearTax.toLocaleString()} 원
+        세액 합계: {yearTax.toLocaleString()} 원
+      </span>{" "}
+      /{" "}
+      <span className="font-semibold text-green-400">
+        누적 입금액: {yearNet.toLocaleString()} 원
       </span>
     </p>
   );
 })()}
+
 
 
 
@@ -2322,46 +2334,47 @@ const [showTable, setShowTable] = React.useState(true);
           </tr>
         </thead>
         <tbody>
-          {royalties.map((r, i) => (
-            <tr key={i} className="border-t border-gray-700">
-              <td className="py-1">{r.date}</td>
-              <td className="py-1">{r.title}</td>
-              <td className="py-1">{r.type}</td>
-              <td className="py-1">{Number(r.amount).toLocaleString()}</td>
-              <td className="py-1">{Number(r.tax).toLocaleString()}</td>
-              <td className="py-1 text-indigo-400">
-                {Number(r.net).toLocaleString()}
-              </td>
-              <td
-                className="py-1 text-red-400 cursor-pointer"
-                onClick={() => removeRow(i)}
+          {[...royalties]
+  .sort((a, b) => new Date(b.date) - new Date(a.date)) // 🔹 최신 날짜가 먼저 오도록 정렬
+  .map((r, i) => (
+    <tr key={i} className="border-t border-gray-700">
+      <td className="py-1">{r.date}</td>
+      <td className="py-1">{r.title}</td>
+      <td className="py-1">{r.type}</td>
+      <td className="py-1">{Number(r.amount).toLocaleString()}</td>
+      <td className="py-1">{Number(r.tax).toLocaleString()}</td>
+      <td className="py-1 text-indigo-400">
+        {Number(r.net).toLocaleString()}
+      </td>
+      <td
+        className="py-1 text-red-400 cursor-pointer"
+        onClick={() => removeRow(i)}
+      >
+        삭제
+      </td>
+      <td
+        className="py-1 text-yellow-400 cursor-pointer"
+        onClick={() => {
+          const updated = [...royalties];
+          const target = updated[i];
+          const newAmount = prompt("정산 금액 수정", target.amount);
+          const newTax = prompt("공제 세액 수정", target.tax);
+          const newNet = prompt("실입금액 수정", target.net);
+          const newNote = prompt("비고 수정", target.note);
 
-              >
-                삭제
-              </td>
-              <td
-  className="py-1 text-yellow-400 cursor-pointer"
-  onClick={() => {
-    const updated = [...royalties];
-    const target = updated[i];
-    const newAmount = prompt("정산 금액 수정", target.amount);
-    const newTax = prompt("공제 세액 수정", target.tax);
-    const newNet = prompt("실입금액 수정", target.net);
-    const newNote = prompt("비고 수정", target.note);
+          if (newAmount !== null) target.amount = newAmount;
+          if (newTax !== null) target.tax = newTax;
+          if (newNet !== null) target.net = newNet;
+          if (newNote !== null) target.note = newNote;
 
-    if (newAmount !== null) target.amount = newAmount;
-    if (newTax !== null) target.tax = newTax;
-    if (newNet !== null) target.net = newNet;
-    if (newNote !== null) target.note = newNote;
+          save(updated);
+        }}
+      >
+        수정
+      </td>
+    </tr>
+  ))}
 
-    save(updated);
-  }}
->
-  수정
-</td>
-
-            </tr>
-          ))}
         </tbody>
       </table>
     </div>

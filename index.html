@@ -2211,58 +2211,86 @@ const [showTable, setShowTable] = React.useState(true);
 
       {/* 📋 인세 내역 */}
 <div className="mt-6">
-  <div className="flex items-center justify-between mb-2">
-    <h3 className="font-semibold text-indigo-700">📋 인세 내역</h3>
-    <button
-      onClick={() => setShowTable((prev) => !prev)}
-      className="text-sm text-indigo-400 hover:text-indigo-300 transition"
-    >
-      {showTable ? "접기 ▲" : "펼치기 ▼"}
-    </button>
-  </div>
+  
 
-  {/* 💰 이번 달 총 인세 요약 */}
+ {/* 📋 인세 내역 헤더 + 요약 */}
+<div className="flex flex-wrap justify-between items-center mb-2">
+  <h3 className="font-semibold text-indigo-700">📋 인세 내역</h3>
+  <button
+    onClick={() => setShowTable((prev) => !prev)}
+    className="text-sm text-indigo-400 hover:text-indigo-300 transition"
+  >
+    {showTable ? "접기 ▲" : "펼치기 ▼"}
+  </button>
+</div>
+
 {(() => {
+  if (!royalties || royalties.length === 0)
+    return (
+      <p className="text-sm text-gray-500 mb-4">
+        이번 달 총 인세: 0원 (비교할 지난달 데이터 없음)
+      </p>
+    );
+
+  // ✅ 현재 월 / 전월 계산
   const now = new Date();
-  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonth = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}`;
+  const thisMonth = `${now.getFullYear()}-${String(
+    now.getMonth() + 1
+  ).padStart(2, "0")}`;
+  const lastMonth = `${now.getFullYear()}-${String(
+    now.getMonth()
+  ).padStart(2, "0")}`;
 
-  const totalThisMonth = royalties
-    .filter((r) => r.date && r.date.startsWith(thisMonth))
-    .reduce((acc, r) => acc + Number(r.net || 0), 0);
+  const monthSum = royalties
+    .filter((r) => r.date.startsWith(thisMonth))
+    .reduce((sum, r) => sum + Number(r.net || 0), 0);
+  const lastMonthSum = royalties
+    .filter((r) => r.date.startsWith(lastMonth))
+    .reduce((sum, r) => sum + Number(r.net || 0), 0);
 
-  const totalLastMonth = royalties
-    .filter((r) => r.date && r.date.startsWith(lastMonth))
-    .reduce((acc, r) => acc + Number(r.net || 0), 0);
+  // ✅ 연도별 합계 계산
+  const yearSum = royalties
+    .filter(
+      (r) => new Date(r.date).getFullYear() === new Date().getFullYear()
+    )
+    .reduce((sum, r) => sum + Number(r.net || 0), 0);
 
-  const diff = totalThisMonth - totalLastMonth;
-  const percent =
-    totalLastMonth === 0 ? 100 : ((diff / totalLastMonth) * 100).toFixed(1);
+  const yearTax = royalties
+    .filter(
+      (r) => new Date(r.date).getFullYear() === new Date().getFullYear()
+    )
+    .reduce((sum, r) => sum + Number(r.tax || 0), 0);
 
-  const up = diff >= 0;
+  // ✅ 증감률 계산
+  const diff =
+    lastMonthSum > 0 ? ((monthSum - lastMonthSum) / lastMonthSum) * 100 : null;
+  const diffText =
+    diff === null
+      ? "(비교할 지난달 데이터 없음)"
+      : diff > 0
+      ? `▲ ${diff.toFixed(1)}% 증가`
+      : diff < 0
+      ? `▼ ${Math.abs(diff).toFixed(1)}% 감소`
+      : "변동 없음";
 
   return (
-    <div className="mb-3 text-sm text-gray-400">
+    <p className="text-sm text-indigo-300 mb-4">
       이번 달 총 인세:{" "}
-      <span className="text-indigo-400 font-medium">
-        {totalThisMonth.toLocaleString()} 원
+      <span className="font-semibold text-indigo-400">
+        {monthSum.toLocaleString()} 원
+      </span>{" "}
+      {diffText} ·{" "}
+      <span className="font-semibold text-green-400">
+        연도 누적: {yearSum.toLocaleString()} 원
+      </span>{" "}
+      / 세액 합계:{" "}
+      <span className="font-semibold text-yellow-400">
+        {yearTax.toLocaleString()} 원
       </span>
-      {totalLastMonth > 0 && (
-        <span
-          className={`ml-2 font-medium ${
-            up ? "text-green-400" : "text-red-400"
-          }`}
-        >
-          {up ? "▲" : "▼"} {Math.abs(percent)}%
-        </span>
-      )}
-      {totalLastMonth === 0 && royalties.length > 0 && (
-        <span className="ml-2 text-gray-500">(비교할 지난달 데이터 없음)</span>
-      )}
-    </div>
+    </p>
   );
 })()}
+
 
 
 

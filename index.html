@@ -390,6 +390,7 @@ function ContractSection({ darkMode }) {
 
   const [newC, setNewC] = React.useState(emptyContract);
   const [editingIndex, setEditingIndex] = React.useState(null);
+  
 
   const saveContracts = (data) => {
     setContracts(data);
@@ -1003,6 +1004,20 @@ const ProjectModal = ({ proj, onClose }) => {
     >
       계약
     </button>
+
+    <button
+  onClick={() =>
+    document.getElementById("royalty-section")?.scrollIntoView({ behavior: "smooth" })
+  }
+  className={`px-3 py-1 text-sm rounded-lg transition
+  ${darkMode
+    ? "bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600"
+    : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
+  }`}
+>
+  인세
+</button>
+
   </div>
 </div>
 
@@ -2065,7 +2080,423 @@ className={`${darkMode
 
 </div>
 
- 
+ {/* 💰 인세 관리 섹션 */}
+<div
+  id="royalty-section"
+  className={`${darkMode 
+    ? "bg-gray-850 text-gray-200 border-gray-700" 
+    : "bg-white text-gray-900 border-gray-200"} p-4 rounded-lg mb-6`}
+>
+  <h2 className="font-semibold text-lg mb-4">💰 인세 관리</h2>
+
+  {(() => {
+    const [royalties, setRoyalties] = React.useState(() => {
+      return JSON.parse(localStorage.getItem("writer_royalties") || "[]");
+    });
+const [showTable, setShowTable] = React.useState(true);
+
+    const emptyRow = {
+      date: "",
+      title: "",
+      type: "유연",
+      amount: "",
+      tax: "",
+      net: "",
+      note: "",
+    };
+
+    const [newRow, setNewRow] = React.useState(emptyRow);
+
+    const save = (data) => {
+      setRoyalties(data);
+      localStorage.setItem("writer_royalties", JSON.stringify(data));
+    };
+
+    const addRow = () => {
+      if (!newRow.date || !newRow.title || !newRow.amount) return alert("필수 항목을 입력하세요.");
+      const updated = [...royalties, newRow];
+      save(updated);
+      setNewRow(emptyRow);
+    };
+
+    const removeRow = (idx) => {
+      if (!confirm("정말 삭제할까요?")) return;
+      const updated = royalties.filter((_, i) => i !== idx);
+      save(updated);
+    };
+
+    // 📅 연도, 월, 작품별 필터용 집계
+    const grouped = React.useMemo(() => {
+      const byYear = {};
+      const byMonth = {};
+      const byTitle = {};
+      royalties.forEach((r) => {
+        const d = new Date(r.date);
+        const y = d.getFullYear();
+        const m = `${y}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+        byYear[y] = (byYear[y] || 0) + Number(r.net || 0);
+        byMonth[m] = (byMonth[m] || 0) + Number(r.net || 0);
+        byTitle[r.title] = (byTitle[r.title] || 0) + Number(r.net || 0);
+      });
+      return { byYear, byMonth, byTitle };
+    }, [royalties]);
+
+    // 📊 그래프용 데이터
+    const months = Object.entries(grouped.byMonth)
+      .sort(([a], [b]) => new Date(a) - new Date(b));
+
+    return (
+      <>
+        {/* 입력 폼 */}
+        <div className="grid md:grid-cols-7 gap-2 text-sm mb-4">
+          <input
+            type="date"
+            value={newRow.date}
+            onChange={(e) => setNewRow({ ...newRow, date: e.target.value })}
+            className="p-2 border rounded"
+          />
+          <input
+            type="text"
+            placeholder="작품명"
+            value={newRow.title}
+            onChange={(e) => setNewRow({ ...newRow, title: e.target.value })}
+            className="p-2 border rounded"
+          />
+          <select
+            value={newRow.type}
+            onChange={(e) => setNewRow({ ...newRow, type: e.target.value })}
+            className="p-2 border rounded"
+          >
+            <option>유연</option>
+            <option>단행</option>
+            <option>초단</option>
+            <option>기타</option>
+          </select>
+          <input
+            type="number"
+            placeholder="정산 금액"
+            value={newRow.amount}
+            onChange={(e) => setNewRow({ ...newRow, amount: e.target.value })}
+            className="p-2 border rounded"
+          />
+          <input
+            type="number"
+            placeholder="공제 세액"
+            value={newRow.tax}
+            onChange={(e) => setNewRow({ ...newRow, tax: e.target.value })}
+            className="p-2 border rounded"
+          />
+          <input
+            type="number"
+            placeholder="실입금액"
+            value={newRow.net}
+            onChange={(e) => setNewRow({ ...newRow, net: e.target.value })}
+            className="p-2 border rounded"
+          />
+          <input
+            type="text"
+            placeholder="비고"
+            value={newRow.note}
+            onChange={(e) => setNewRow({ ...newRow, note: e.target.value })}
+            className="p-2 border rounded"
+          />
+        </div>
+        <button
+          onClick={addRow}
+          className="px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm mb-4"
+        >
+          + 인세 추가
+        </button>
+
+      {/* 📋 인세 내역 */}
+<div className="mt-6">
+  <div className="flex items-center justify-between mb-2">
+    <h3 className="font-semibold text-indigo-700">📋 인세 내역</h3>
+    <button
+      onClick={() => setShowTable((prev) => !prev)}
+      className="text-sm text-indigo-400 hover:text-indigo-300 transition"
+    >
+      {showTable ? "접기 ▲" : "펼치기 ▼"}
+    </button>
+  </div>
+
+  {/* 💰 이번 달 총 인세 요약 */}
+{(() => {
+  const now = new Date();
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonth = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}`;
+
+  const totalThisMonth = royalties
+    .filter((r) => r.date && r.date.startsWith(thisMonth))
+    .reduce((acc, r) => acc + Number(r.net || 0), 0);
+
+  const totalLastMonth = royalties
+    .filter((r) => r.date && r.date.startsWith(lastMonth))
+    .reduce((acc, r) => acc + Number(r.net || 0), 0);
+
+  const diff = totalThisMonth - totalLastMonth;
+  const percent =
+    totalLastMonth === 0 ? 100 : ((diff / totalLastMonth) * 100).toFixed(1);
+
+  const up = diff >= 0;
+
+  return (
+    <div className="mb-3 text-sm text-gray-400">
+      이번 달 총 인세:{" "}
+      <span className="text-indigo-400 font-medium">
+        {totalThisMonth.toLocaleString()} 원
+      </span>
+      {totalLastMonth > 0 && (
+        <span
+          className={`ml-2 font-medium ${
+            up ? "text-green-400" : "text-red-400"
+          }`}
+        >
+          {up ? "▲" : "▼"} {Math.abs(percent)}%
+        </span>
+      )}
+      {totalLastMonth === 0 && royalties.length > 0 && (
+        <span className="ml-2 text-gray-500">(비교할 지난달 데이터 없음)</span>
+      )}
+    </div>
+  );
+})()}
+
+
+
+  {showTable && royalties.length > 0 ? (
+    <div className="overflow-x-auto">
+      <table className="min-w-full text-sm border-t border-gray-700">
+        <thead>
+          <tr className="text-indigo-400">
+            <th className="text-left py-2">입금일</th>
+            <th className="text-left py-2">작품명</th>
+            <th className="text-left py-2">유형</th>
+            <th className="text-left py-2">정산 금액</th>
+            <th className="text-left py-2">공제 세액</th>
+            <th className="text-left py-2">실입금액</th>
+            <th className="text-left py-2">비고</th>
+            <th className="text-left py-2">수정</th>
+
+          </tr>
+        </thead>
+        <tbody>
+          {royalties.map((r, i) => (
+            <tr key={i} className="border-t border-gray-700">
+              <td className="py-1">{r.date}</td>
+              <td className="py-1">{r.title}</td>
+              <td className="py-1">{r.type}</td>
+              <td className="py-1">{Number(r.amount).toLocaleString()}</td>
+              <td className="py-1">{Number(r.tax).toLocaleString()}</td>
+              <td className="py-1 text-indigo-400">
+                {Number(r.net).toLocaleString()}
+              </td>
+              <td
+                className="py-1 text-red-400 cursor-pointer"
+                onClick={() => removeRow(i)}
+
+              >
+                삭제
+              </td>
+              <td
+  className="py-1 text-yellow-400 cursor-pointer"
+  onClick={() => {
+    const updated = [...royalties];
+    const target = updated[i];
+    const newAmount = prompt("정산 금액 수정", target.amount);
+    const newTax = prompt("공제 세액 수정", target.tax);
+    const newNet = prompt("실입금액 수정", target.net);
+    const newNote = prompt("비고 수정", target.note);
+
+    if (newAmount !== null) target.amount = newAmount;
+    if (newTax !== null) target.tax = newTax;
+    if (newNet !== null) target.net = newNet;
+    if (newNote !== null) target.note = newNote;
+
+    save(updated);
+  }}
+>
+  수정
+</td>
+
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    !showTable && (
+      <p className="text-sm text-gray-500 mt-1">표가 접혀 있습니다.</p>
+    )
+  )}
+</div>
+
+
+        
+
+        {/* 📊 월별 인세 그래프 */}
+<div className="mt-6">
+  <h3 className="font-semibold mb-2 text-indigo-700">📈 월별 인세 추이</h3>
+  <div className={`flex items-end gap-2 h-48 p-3 rounded-lg overflow-x-auto ${
+    darkMode ? "bg-gray-800" : "bg-gray-50"
+  }`}>
+    {months.map(([m, val], i) => (
+      <div key={i} className="flex flex-col items-center justify-end flex-1">
+        <div
+          className="bg-indigo-500 rounded-t w-6"
+          style={{ height: `${(val / Math.max(...months.map(x => x[1]), 1)) * 160}px` }}
+        />
+        <span className="text-[11px] mt-1">{m}</span>
+      </div>
+    ))}
+  </div>
+</div>
+
+{/* 📆 연도별 인세 통계 */}
+<div className="mt-8">
+  <h3 className="font-semibold mb-2 text-indigo-700">📆 연도별 인세 통계</h3>
+  <div className={`flex items-end gap-3 h-48 p-3 rounded-lg overflow-x-auto ${
+    darkMode ? "bg-gray-800" : "bg-gray-50"
+  }`}>
+    {Object.entries(grouped.byYear)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([year, total], i) => {
+        const maxYearVal = Math.max(...Object.values(grouped.byYear), 1);
+        return (
+          <div key={i} className="flex flex-col items-center justify-end flex-1">
+            <div
+              className="bg-green-500 rounded-t w-8"
+              style={{ height: `${(total / maxYearVal) * 160}px` }}
+            />
+            <span className="text-[11px] mt-1">{year}</span>
+            <span className="text-[10px] text-green-300">{Number(total).toLocaleString()}</span>
+          </div>
+        );
+      })}
+  </div>
+</div>
+
+{/* 🎨 작품별 인세 통계 */}
+<div className="mt-8">
+  <h3 className="font-semibold mb-2 text-indigo-700">🎨 작품별 인세 통계</h3>
+  <div className={`grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 ${
+    darkMode ? "text-gray-200" : "text-gray-800"
+  }`}>
+    {Object.entries(grouped.byTitle)
+      .sort(([, a], [, b]) => b - a)
+      .map(([title, total], i) => {
+        const maxTitle = Math.max(...Object.values(grouped.byTitle), 1);
+        return (
+          <div key={i}
+            className={`p-3 rounded-lg border ${
+              darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            }`}>
+            <div className="font-semibold truncate">{title}</div>
+            <div className="text-sm text-indigo-400">{Number(total).toLocaleString()} 원</div>
+            <div
+              className="mt-1 h-2 bg-indigo-500 rounded"
+              style={{ width: `${(total / maxTitle) * 100}%` }}
+            />
+          </div>
+        );
+      })}
+  </div>
+</div>
+{/* 🍩 유형별 인세 비중 */}
+<div className="mt-10">
+  <h3 className="font-semibold mb-2 text-indigo-700">🍩 유형별 인세 비중</h3>
+
+  {(() => {
+    const typeTotals = {};
+    royalties.forEach((r) => {
+      typeTotals[r.type] = (typeTotals[r.type] || 0) + Number(r.net || 0);
+    });
+
+    const entries = Object.entries(typeTotals);
+    const totalSum = entries.reduce((a, [, v]) => a + v, 0);
+
+    if (entries.length === 0) {
+      return <p className="text-sm text-gray-500">등록된 인세 데이터가 없습니다.</p>;
+    }
+
+    return (
+      <div
+        className={`flex flex-col md:flex-row items-center justify-center gap-6 p-4 rounded-lg ${
+          darkMode ? "bg-gray-800 text-gray-200" : "bg-gray-50 text-gray-900"
+        }`}
+      >
+        {/* 🍩 도넛 차트 */}
+        <svg viewBox="0 0 36 36" className="w-40 h-40 transform -rotate-90">
+          {(() => {
+            let cumulative = 0;
+            const colors = [
+              "#818CF8", // 유연
+              "#34D399", // 단행
+              "#FBBF24", // 초단
+              "#F87171", // 기타
+            ];
+
+            return entries.map(([type, val], i) => {
+              const ratio = val / totalSum;
+              const start = cumulative * 100;
+              const end = start + ratio * 100;
+              cumulative += ratio;
+              return (
+                <circle
+                  key={i}
+                  r="15.9155"
+                  cx="18"
+                  cy="18"
+                  fill="transparent"
+                  stroke={colors[i % colors.length]}
+                  strokeWidth="3.5"
+                  strokeDasharray={`${end - start} ${100 - (end - start)}`}
+                  strokeDashoffset={-start}
+                />
+              );
+            });
+          })()}
+        </svg>
+
+        {/* 🧾 항목별 표기 */}
+        <ul className="text-sm space-y-1 text-left">
+          {entries.map(([type, val], i) => {
+            const percent = ((val / totalSum) * 100).toFixed(1);
+            const colorClass = [
+              "text-indigo-400",
+              "text-green-400",
+              "text-yellow-400",
+              "text-red-400",
+            ][i % 4];
+            return (
+              <li key={i} className="flex items-center gap-2">
+                <span className={`w-3 h-3 rounded-full ${colorClass}`}>●</span>
+                <span className="font-medium w-12">{type}</span>
+                <span className="text-gray-400">{val.toLocaleString()}원</span>
+                <span className="ml-2 text-gray-500">({percent}%)</span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
+  })()}
+</div>
+
+        
+      </>
+      
+    );
+    
+      })()}
+
+      
+</div>
+
+
+
 
 {/* 📑 계약 관리 섹션 */}
 <div id="contract-section">
@@ -2142,6 +2573,8 @@ scrollTopButton.onclick = () =>
           localStorage.setItem("writer_contracts_v1", JSON.stringify(cloudData.contracts));
           if (cloudData.calendar)
   localStorage.setItem("calendar_tasks", JSON.stringify(cloudData.calendar));
+if (cloudData.royalties)
+  localStorage.setItem("writer_royalties", JSON.stringify(cloudData.royalties));
 
         if (cloudData.targets) // ✅ 추가
           localStorage.setItem("writer_targets", JSON.stringify(cloudData.targets)); // ✅ 추가
@@ -2156,7 +2589,8 @@ scrollTopButton.onclick = () =>
         const contracts = JSON.parse(localStorage.getItem("writer_contracts_v1") || "[]");
         const targets   = JSON.parse(localStorage.getItem("writer_targets") || "{}"); // ✅ 추가
         const calendar = JSON.parse(localStorage.getItem("calendar_tasks") || "{}");
-await setDoc(ref, { planner, contracts, targets, calendar });
+        const royalties = JSON.parse(localStorage.getItem("writer_royalties") || "[]");
+await setDoc(ref, { planner, contracts, targets, calendar, royalties });
 
         console.log("✅ 클라우드 자동 백업 완료 (planner + contracts + targets)"); // ✅ 문구 수정
       }, 30000);

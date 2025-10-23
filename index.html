@@ -1974,7 +1974,7 @@ className={`${darkMode
     const [royalties, setRoyalties] = React.useState(() => {
       return JSON.parse(localStorage.getItem("writer_royalties") || "[]");
     });
-const [showTable, setShowTable] = React.useState(true);
+const [showTable, setShowTable] = React.useState(false);
   // 🔄 Firebase에서 인세 데이터 갱신 시 화면 업데이트
   React.useEffect(() => {
     const handleUpdate = () => {
@@ -2028,7 +2028,7 @@ const [showTable, setShowTable] = React.useState(true);
 
         byYear[y] = (byYear[y] || 0) + Number(r.net || 0);
         byMonth[m] = (byMonth[m] || 0) + Number(r.net || 0);
-        byTitle[r.title] = (byTitle[r.title] || 0) + Number(r.net || 0);
+        byTitle[r.title] = (byTitle[r.title] || 0) + Number(r.amount || 0);
       });
       return { byYear, byMonth, byTitle };
     }, [royalties]);
@@ -2343,7 +2343,7 @@ const [showTable, setShowTable] = React.useState(true);
   {(() => {
     const typeTotals = {};
     royalties.forEach((r) => {
-      typeTotals[r.type] = (typeTotals[r.type] || 0) + Number(r.net || 0);
+      typeTotals[r.type] = (typeTotals[r.type] || 0) + Number(r.amount || 0);
     });
 
     const entries = Object.entries(typeTotals);

@@ -795,48 +795,7 @@ const ProjectModal = ({ proj, onClose }) => {
           </div>
         
 
-      {/* 🧩 로그 목록 (접기/펼치기 토글) */}
-<div className="mb-3">
-  <button
-    onClick={() => setShowLogs(!showLogs)}
-    className={`text-sm mb-2 px-3 py-1 rounded-md border ${
-      darkMode
-        ? "border-gray-600 text-indigo-300 hover:bg-gray-800"
-        : "border-gray-300 text-indigo-600 hover:bg-indigo-50"
-    }`}
-  >
-    {showLogs ? "▼ 로그 접기" : "▶ 로그 열기"}{" "}
-    ({(projectData.logs ?? []).length}개)
-  </button>
-
-  {showLogs &&
-    ((projectData.logs ?? []).length === 0 ? (
-      <div className="text-gray-500 text-sm">기록 없음</div>
-    ) : (
-      [...(projectData.logs ?? [])]
-        .sort((a, b) => parseKoreanTime(b.time) - parseKoreanTime(a.time))
-        .map((l, i) => (
-          <div
-            key={i}
-            className={`flex justify-between items-center p-2 mb-1 rounded-lg ${
-              darkMode
-                ? "bg-gray-800 text-gray-200 border border-gray-700"
-                : "bg-gray-50 text-gray-900 border border-gray-200"
-            }`}
-          >
-            <span>{l.time}</span>
-            <span>{l.diff.toLocaleString()}자</span>
-            <button
-              onClick={() => removeLog(i)}
-              className="text-xs text-red-500"
-            >
-              삭제
-            </button>
-          </div>
-        ))
-    ))}
-</div>
-
+     
 
 
 
@@ -2594,15 +2553,40 @@ const [showTable, setShowTable] = React.useState(true);
   // 로그인
   loginButton.onclick = () => signInWithPopup(auth, provider);
 
- // ✅ 스크롤 맨 위로 버튼
-const scrollTopButton = document.createElement("button");
-scrollTopButton.innerText = "⬆️";
-scrollTopButton.title = "맨 위로";
-scrollTopButton.className =
-  "fixed bottom-[4.5rem] right-5 bg-gray-700 text-white px-3 py-2 rounded-full shadow hover:bg-gray-600 transition";
-document.body.appendChild(scrollTopButton);
-scrollTopButton.onclick = () =>
-  window.scrollTo({ top: 0, behavior: "smooth" });
+ // 🌟 로그인 버튼 위 세로형 북마크 버튼바
+const bookmarkNav = document.createElement("div");
+bookmarkNav.className =
+  "fixed bottom-24 right-5 flex flex-col gap-3 items-end z-50";
+
+// 버튼 목록 정의
+const buttons = [
+  { id: "top", label: "맨 위" }, // ⬅️ 새로 추가된 버튼
+  { id: "log-section", label: "로그" },
+  { id: "monthly-section", label: "월간" },
+  { id: "calendar-section", label: "캘린더" },
+  { id: "contract-section", label: "계약" },
+  { id: "royalty-section", label: "인세" },
+];
+
+
+buttons.forEach(({ id, label }) => {
+  const btn = document.createElement("button");
+  btn.innerText = label;
+  btn.className =
+    "bg-gray-700 hover:bg-indigo-500 text-white rounded-full px-4 py-2 shadow-md transition";
+  btn.onclick = () => {
+    if (id === "top") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      const section = document.getElementById(id);
+      if (section) section.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+  bookmarkNav.appendChild(btn);
+});
+
+document.body.appendChild(bookmarkNav);
+  
 
 
   // 로그인 상태 감시

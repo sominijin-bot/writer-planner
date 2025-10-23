@@ -896,119 +896,27 @@ const ProjectModal = ({ proj, onClose }) => {
 >
 
             <h1 className="text-2xl sm:text-3xl font-bold mb-6">작가용 작업 플래너</h1>
-{/* 🌗 라이트모드 + 북마크 버튼바 */}
-<div className="flex flex-wrap items-center justify-between mb-4">
-  {/* 라이트모드 버튼 */}
-  <button
-    onClick={() => setDarkMode(!darkMode)}
-    className={`px-4 py-2 rounded-lg transition ${
-      darkMode
-        ? "bg-gray-700 hover:bg-gray-600 text-yellow-300"
-        : "bg-white hover:bg-gray-100 text-gray-700 border"
-    }`}
-  >
-    {darkMode ? "☀️ 라이트모드" : "🌙 다크모드"}
-  </button>
 
-  {/* 📍 북마크 버튼 */}
-  <div className="flex gap-2">
-    <button
-      onClick={() =>
-        document.getElementById("log-section")?.scrollIntoView({ behavior: "smooth" })
-      }
-      className={`px-3 py-1 text-sm rounded-lg transition
-  ${darkMode
-    ? "bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600"
-    : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
-  }`}
-    >
-      로그
-    </button>
-    <button
-      onClick={() =>
-        document.getElementById("monthly-section")?.scrollIntoView({ behavior: "smooth" })
-      }
-      className={`px-3 py-1 text-sm rounded-lg transition
-  ${darkMode
-    ? "bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600"
-    : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
-  }`}
-    >
-      월간
-    </button>
-    <button
-  onClick={() =>
-    document
-      .getElementById("calendar-section")
-      ?.scrollIntoView({ behavior: "smooth" })
-  }
-  className={`px-3 py-1 text-sm rounded-lg transition
-  ${
-    darkMode
-      ? "bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600"
-      : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
-  }`}
->
-  캘린더
-</button>
-
-    <button
-      onClick={() =>
-        document.getElementById("contract-section")?.scrollIntoView({ behavior: "smooth" })
-      }
-      className={`px-3 py-1 text-sm rounded-lg transition
-  ${darkMode
-    ? "bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600"
-    : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
-  }`}
-    >
-      계약
-    </button>
-
-    <button
-  onClick={() =>
-    document.getElementById("royalty-section")?.scrollIntoView({ behavior: "smooth" })
-  }
-  className={`px-3 py-1 text-sm rounded-lg transition
-  ${darkMode
-    ? "bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600"
-    : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
-  }`}
->
-  인세
-</button>
-
-  </div>
-</div>
 
 
 
            
 
-            {/* 🔸 날짜 + 작품 선택 (한 줄 정렬) */}
-<div className="flex flex-wrap items-center gap-3 mb-4">
+            {/* 🔸 날짜 + 작품 선택 + 라이트모드 버튼 */}
+<div className="flex items-center justify-between gap-3 mb-4">
+  {/* 왼쪽 그룹 */}
   <div className="flex items-center gap-2">
-    <button
-      onClick={() => nextDay(-1)}
-      className="px-3 py-1 bg-gray-200 rounded-lg"
-    >
-      ◀
-    </button>
+    <button onClick={() => nextDay(-1)} className="px-3 py-1 bg-gray-200 rounded-lg">◀</button>
     <input
       type="date"
       value={dateStr}
       onChange={(e) => setDateStr(e.target.value)}
       className="border rounded-lg p-2"
     />
-    <button
-      onClick={() => nextDay(1)}
-      className="px-3 py-1 bg-gray-200 rounded-lg"
-    >
-      ▶
-    </button>
+    <button onClick={() => nextDay(1)} className="px-3 py-1 bg-gray-200 rounded-lg">▶</button>
   </div>
 
-  {/* 🔸 작품 드롭다운을 오른쪽에 배치 */}
+  {/* 가운데: 작품 선택 */}
   <select
     value={filterProject}
     onChange={(e) => setFilterProject(e.target.value)}
@@ -1018,7 +926,20 @@ const ProjectModal = ({ proj, onClose }) => {
       <option key={p}>{p}</option>
     ))}
   </select>
+
+  {/* 오른쪽 끝: 라이트/다크모드 버튼 */}
+  <button
+    onClick={() => setDarkMode(!darkMode)}
+    className={`ml-auto px-3 py-2 rounded-lg transition ${
+      darkMode
+        ? "bg-gray-700 hover:bg-gray-600 text-yellow-300"
+        : "bg-white hover:bg-gray-100 text-gray-700 border"
+    }`}
+  >
+    {darkMode ? "☀️ 라이트모드" : "🌙 다크모드"}
+  </button>
 </div>
+
 
 
             {/* 🌅 작품별 시작 정보 */}
@@ -2513,11 +2434,13 @@ const [showTable, setShowTable] = React.useState(true);
 <div id="contract-section">
   <ContractSection darkMode={darkMode} />
 </div>
-{/* 전체 래퍼 닫기 */}
-</div>
 
-);
-}
+</div>   // ← return 시작부의 최상위 <div> 닫기 (JS 주석 사용)
+);        // ← return 닫기
+}         // ← PlannerApp 함수 닫기
+
+
+
 
 
   window.PlannerApp = PlannerApp;

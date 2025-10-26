@@ -980,6 +980,98 @@ const ProjectModal = ({ proj, onClose }) => {
               </div>
             </div>
 
+  {/* 🔥 오늘의 집필 랭킹 & 목표 달성률 */}
+<div className={`${darkMode 
+  ? "bg-gray-850 text-gray-200 border-gray-700" 
+  : "bg-white text-gray-900 border-gray-200"} p-4 rounded-lg`}>
+
+
+
+  <h2 className="font-semibold text-lg mb-4">🔥 오늘의 집필 랭킹 & 목표 달성률</h2>
+
+  {(() => {
+    const today = store[dateStr] || {};
+    const entries = Object.entries(today).filter(([k]) => k !== "logs" && k !== "startTime" && k !== "startWords");
+
+    if (entries.length === 0) {
+      return <p className="text-gray-500 text-sm">오늘 작성된 작품이 없습니다.</p>;
+    }
+
+    const projectRank = entries
+      .map(([proj, val]) => {
+        const total = (val.logs || []).reduce((s, l) => s + (l.diff || 0), 0);
+        const goal = val.goal || 5000; // 기본 목표 5천자
+        const progress = Math.min(100, (total / goal) * 100);
+        return { proj, total, goal, progress };
+      })
+      .sort((a, b) => b.total - a.total);
+
+    return (
+      <div className="space-y-3">
+        {projectRank.map((p, idx) => (
+          <div key={p.proj} className={`p-3 border rounded-lg ${
+  darkMode ? "bg-gray-850 text-gray-200 border-gray-700" : "bg-gray-50 text-gray-900 border-gray-200"
+}`}>
+
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-indigo-700">{p.proj}</span>
+                {idx === 0 && <span className="text-red-500 text-lg">🔥</span>}
+              </div>
+              <span className="text-sm text-gray-600">{p.total.toLocaleString()}자</span>
+            </div>
+
+            {/* 진행률 바 */}
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div
+                className={`h-3 rounded-full ${
+                  p.progress >= 100 ? "bg-green-500" : "bg-indigo-500"
+                }`}
+                style={{ width: `${p.progress}%` }}
+              ></div>
+            </div>
+
+           {/* 목표량 및 달성률 표시 */}
+<div className="flex justify-between text-xs text-gray-500 mt-1">
+  <span>목표: {p.goal.toLocaleString()}자</span>
+  <span>
+    달성률: {p.progress.toFixed(1)}%
+    <span className="ml-2">
+      (남은 {Math.max(0, p.goal - p.total).toLocaleString()}자)
+    </span>
+  </span>
+</div>
+
+
+
+            {/* 목표량 변경 */}
+            <div className="flex gap-2 mt-2 items-center">
+              <input
+                type="number"
+                placeholder="목표량 수정"
+                defaultValue={p.goal}
+                className="w-24 p-1 text-sm border rounded"
+                onBlur={(e) => {
+                  const newGoal = Number(e.target.value || 0);
+                  if (newGoal > 0) {
+                    setDay((cur) => {
+                      const n = JSON.parse(JSON.stringify(cur ?? emptyDay()));
+                      if (!n[p.proj]) n[p.proj] = { logs: [] };
+                      n[p.proj].goal = newGoal;
+                      return n;
+                    });
+                  }
+                }}
+              />
+              <span className="text-xs text-gray-400">(엔터 없이 포커스 아웃 시 저장)</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  })()}
+</div>
+
             {/* 🧱 로그 입력 */}
             {/* 🧱 로그 입력 + 오늘 총합 표시 */}
            <div
@@ -1009,13 +1101,7 @@ const ProjectModal = ({ proj, onClose }) => {
     </button>
   </div>
 
-  {/* 🔹 오늘 총합 표시 */}
-  <div className="text-sm font-semibold text-indigo-400 whitespace-nowrap">
-    오늘 총합:{" "}
-    <span className="text-indigo-300">
-      {totalWords.toLocaleString()}자
-    </span>
-  </div>
+
 </div>
 
 
@@ -1482,90 +1568,7 @@ const ProjectModal = ({ proj, onClose }) => {
     );
   })()}
 </div>
-{/* 🔥 오늘의 집필 랭킹 & 목표 달성률 */}
-<div className={`${darkMode 
-  ? "bg-gray-850 text-gray-200 border-gray-700" 
-  : "bg-white text-gray-900 border-gray-200"} p-4 rounded-lg`}>
 
-
-
-  <h2 className="font-semibold text-lg mb-4">🔥 오늘의 집필 랭킹 & 목표 달성률</h2>
-
-  {(() => {
-    const today = store[dateStr] || {};
-    const entries = Object.entries(today).filter(([k]) => k !== "logs" && k !== "startTime" && k !== "startWords");
-
-    if (entries.length === 0) {
-      return <p className="text-gray-500 text-sm">오늘 작성된 작품이 없습니다.</p>;
-    }
-
-    const projectRank = entries
-      .map(([proj, val]) => {
-        const total = (val.logs || []).reduce((s, l) => s + (l.diff || 0), 0);
-        const goal = val.goal || 5000; // 기본 목표 5천자
-        const progress = Math.min(100, (total / goal) * 100);
-        return { proj, total, goal, progress };
-      })
-      .sort((a, b) => b.total - a.total);
-
-    return (
-      <div className="space-y-3">
-        {projectRank.map((p, idx) => (
-          <div key={p.proj} className={`p-3 border rounded-lg ${
-  darkMode ? "bg-gray-850 text-gray-200 border-gray-700" : "bg-gray-50 text-gray-900 border-gray-200"
-}`}>
-
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-indigo-700">{p.proj}</span>
-                {idx === 0 && <span className="text-red-500 text-lg">🔥</span>}
-              </div>
-              <span className="text-sm text-gray-600">{p.total.toLocaleString()}자</span>
-            </div>
-
-            {/* 진행률 바 */}
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-              <div
-                className={`h-3 rounded-full ${
-                  p.progress >= 100 ? "bg-green-500" : "bg-indigo-500"
-                }`}
-                style={{ width: `${p.progress}%` }}
-              ></div>
-            </div>
-
-            {/* 목표량 및 달성률 표시 */}
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>목표: {p.goal.toLocaleString()}자</span>
-              <span>달성률: {p.progress.toFixed(1)}%</span>
-            </div>
-
-            {/* 목표량 변경 */}
-            <div className="flex gap-2 mt-2 items-center">
-              <input
-                type="number"
-                placeholder="목표량 수정"
-                defaultValue={p.goal}
-                className="w-24 p-1 text-sm border rounded"
-                onBlur={(e) => {
-                  const newGoal = Number(e.target.value || 0);
-                  if (newGoal > 0) {
-                    setDay((cur) => {
-                      const n = JSON.parse(JSON.stringify(cur ?? emptyDay()));
-                      if (!n[p.proj]) n[p.proj] = { logs: [] };
-                      n[p.proj].goal = newGoal;
-                      return n;
-                    });
-                  }
-                }}
-              />
-              <span className="text-xs text-gray-400">(엔터 없이 포커스 아웃 시 저장)</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  })()}
-</div>
 
 {/* 📅 주간 & 월간 트렌드 대시보드 */}
 <div className={`${darkMode 
@@ -2435,9 +2438,9 @@ const [showTable, setShowTable] = React.useState(false);
   <ContractSection darkMode={darkMode} />
 </div>
 
-</div>   // ← return 시작부의 최상위 <div> 닫기 (JS 주석 사용)
-);        // ← return 닫기
-}         // ← PlannerApp 함수 닫기
+</div>
+);
+}
 
 
 

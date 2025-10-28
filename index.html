@@ -613,6 +613,7 @@ useEffect(() => {
         const [store, setStore] = useState({});
         const [filterProject, setFilterProject] = useState(PROJECTS[0]);
         const [showLogs, setShowLogs] = useState(true);
+        const [, forceRender] = React.useState(0);
 
       
 
@@ -1044,27 +1045,43 @@ const ProjectModal = ({ proj, onClose }) => {
 
 
 
-            {/* 목표량 변경 */}
-            <div className="flex gap-2 mt-2 items-center">
-              <input
-                type="number"
-                placeholder="목표량 수정"
-                defaultValue={p.goal}
-                className="w-24 p-1 text-sm border rounded"
-                onBlur={(e) => {
-                  const newGoal = Number(e.target.value || 0);
-                  if (newGoal > 0) {
-                    setDay((cur) => {
-                      const n = JSON.parse(JSON.stringify(cur ?? emptyDay()));
-                      if (!n[p.proj]) n[p.proj] = { logs: [] };
-                      n[p.proj].goal = newGoal;
-                      return n;
-                    });
-                  }
-                }}
-              />
-              <span className="text-xs text-gray-400">(엔터 없이 포커스 아웃 시 저장)</span>
-            </div>
+           {/* 목표량 변경 + 삭제 */}
+<div className="flex gap-2 mt-2 items-center">
+  <input
+    type="number"
+    placeholder="목표량 수정"
+    value={p.goal} // ✅ defaultValue → value 로 변경
+    onChange={(e) => {
+      const newGoal = Number(e.target.value || 0);
+      setDay((cur) => {
+        const n = JSON.parse(JSON.stringify(cur ?? emptyDay()));
+        if (!n[p.proj]) n[p.proj] = { logs: [] };
+        n[p.proj].goal = newGoal;
+        return n;
+      });
+    }}
+    className="w-24 p-1 text-sm border rounded"
+  />
+
+ <button
+  onClick={() => {
+    if (confirm(`${p.proj}을(를) 오늘의 목록에서 삭제할까요?`)) {
+      setDay((cur) => {
+        const n = JSON.parse(JSON.stringify(cur ?? emptyDay()));
+        // ✅ 작품 전체 삭제
+        delete n[p.proj];
+        return n;
+      });
+      // ✅ 즉시 화면 갱신
+      setStore((prev) => ({ ...prev }));
+    }
+  }}
+  className="text-xs text-rose-400 hover:text-rose-300 border border-rose-300/30 px-2 py-[2px] rounded transition"
+>
+  작품 삭제
+</button>
+</div>
+
           </div>
         ))}
       </div>
@@ -1987,7 +2004,7 @@ const [showTable, setShowTable] = React.useState(false);
     window.addEventListener("royaltyDataUpdated", handleUpdate);
     return () => window.removeEventListener("royaltyDataUpdated", handleUpdate);
   }, []);
-
+  
 
     const emptyRow = {
       date: "",

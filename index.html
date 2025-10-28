@@ -1063,23 +1063,28 @@ const ProjectModal = ({ proj, onClose }) => {
     className="w-24 p-1 text-sm border rounded"
   />
 
- <button
+<button
   onClick={() => {
     if (confirm(`${p.proj}을(를) 오늘의 목록에서 삭제할까요?`)) {
       setDay((cur) => {
         const n = JSON.parse(JSON.stringify(cur ?? emptyDay()));
-        // ✅ 작품 전체 삭제
         delete n[p.proj];
+        // ✅ localStorage 즉시 반영
+        const updatedStore = {
+          ...store,
+          [dateStr]: n
+        };
+        localStorage.setItem("writer_planner_store_v4", JSON.stringify(updatedStore));
+        setStore(updatedStore); // 상태 갱신
         return n;
       });
-      // ✅ 즉시 화면 갱신
-      setStore((prev) => ({ ...prev }));
     }
   }}
   className="text-xs text-rose-400 hover:text-rose-300 border border-rose-300/30 px-2 py-[2px] rounded transition"
 >
   작품 삭제
 </button>
+
 </div>
 
           </div>

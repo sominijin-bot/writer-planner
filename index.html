@@ -1822,11 +1822,15 @@ const grouped = {
               const targets = raw ? JSON.parse(raw) : {};
 
               // 목표 수정
-              const updateTarget = (proj, val) => {
-                const updated = { ...targets, [proj]: val };
-                localStorage.setItem("writer_targets", JSON.stringify(updated));
-                alert(`${proj} 목표가 ${val.toLocaleString()}자로 설정되었습니다.`);
-              };
+const updateTarget = (proj, val) => {
+  const updated = { ...targets, [proj]: val };
+  localStorage.setItem("writer_targets", JSON.stringify(updated));
+  alert(`${proj} 목표가 ${val.toLocaleString()}자로 설정되었습니다.`);
+
+  // ✅ 즉시 리렌더링 반영
+  forceRender((n) => n + 1);
+};
+
 
               // 각 작품별 총합
               const projectTotals = {};

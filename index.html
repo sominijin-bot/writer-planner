@@ -1327,7 +1327,7 @@ const grouped = {
               const projectRank = entries
                 .map(([proj, val]) => {
                   const total = (val.logs || []).reduce((s, l) => s + (l.diff || 0), 0);
-                  const goal = val.goal || 5000; // 기본 목표 5천자
+                  const goal = val.goal || 4000; // 기본 목표 4천자
                   const progress = Math.min(100, (total / goal) * 100);
                   return { proj, total, goal, progress };
                 })

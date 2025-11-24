@@ -410,6 +410,7 @@
     }
 
    function RoyaltySection({ darkMode }) {
+    // 📌 작품별 인세 모달 상태
   const [royalties, setRoyalties] = React.useState(() => {
     return JSON.parse(localStorage.getItem("writer_royalties") || "[]");
   });
@@ -881,7 +882,7 @@
 
     function PlannerApp() {
       const [darkMode, setDarkMode] = useState(false);
-
+const [activeRoyaltyProject, setActiveRoyaltyProject] = React.useState(null);
       // ✅ 다크모드 불러오기
       useEffect(() => {
         const saved = localStorage.getItem("darkMode");
@@ -2484,9 +2485,13 @@ const updateTarget = (proj, val) => {
                 .map(([title, total], i) => {
                   const maxTitle = Math.max(...Object.values(grouped.byTitle), 1);
                   return (
-                    <div key={i}
-                      className={`p-3 rounded-lg border ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
-                        }`}>
+                    <div
+  key={i}
+  onClick={() => setActiveRoyaltyProject(title)}
+  className={`p-3 rounded-lg border cursor-pointer hover:shadow-md transition ${
+    darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+  }`}
+>
                       <div className="font-semibold truncate">{title}</div>
                       <div className="text-sm text-indigo-400">{Number(total).toLocaleString()} 원</div>
                       <div
@@ -2498,6 +2503,64 @@ const updateTarget = (proj, val) => {
                 })}
             </div>
           </div>
+    {/* 📌 작품별 연도별 인세 모달 */}
+{activeRoyaltyProject && (
+  <div
+    className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+    onClick={() => setActiveRoyaltyProject(null)}
+  >
+    <div
+      className={`rounded-lg p-5 w-80 relative ${
+        darkMode ? "bg-gray-800 text-gray-200" : "bg-white text-gray-900"
+      }`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        className="absolute right-3 top-3 text-gray-400 hover:text-gray-200"
+        onClick={() => setActiveRoyaltyProject(null)}
+      >
+        ✕
+      </button>
+
+      <h2 className="text-lg font-bold text-indigo-400 mb-4">
+        {activeRoyaltyProject} 연도별 수입
+      </h2>
+
+      {(() => {
+        const royalties = JSON.parse(localStorage.getItem("writer_royalties") || "[]");
+        const filtered = royalties.filter(
+          (r) => r.title === activeRoyaltyProject
+        );
+
+        const byYear = filtered.reduce((acc, r) => {
+          const y = (r.date || "").slice(0, 4);
+          acc[y] = (acc[y] || 0) + Number(r.amount || 0);
+          return acc;
+        }, {});
+
+        const sorted = Object.entries(byYear).sort(([a], [b]) => a - b);
+
+        if (sorted.length === 0)
+          return <p className="text-sm text-gray-400">데이터가 없습니다.</p>;
+
+        return (
+          <div className="space-y-2">
+            {sorted.map(([year, total]) => (
+              <div
+                key={year}
+                className="flex justify-between items-center border-b py-1"
+              >
+                <span className="text-indigo-300 font-medium">{year}년</span>
+                <span>{Number(total).toLocaleString()} 원</span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+    </div>
+  </div>
+)}
+
           {/* 🍩 유형별 인세 비중 */}
           <div className="mt-10">
             <h3 className="font-semibold mb-2 text-indigo-700">🍩 유형별 인세 비중</h3>
@@ -2574,14 +2637,12 @@ const updateTarget = (proj, val) => {
                     })}
                   </ul>
                 </div>
+      
               );
             })()}
           </div>
 
-
-
-
-          
+         
 
        </div>   // <- 마지막 컨테이너 닫힘
       );        // <- return 닫힘
@@ -2589,11 +2650,7 @@ const updateTarget = (proj, val) => {
 
     window.PlannerApp = PlannerApp;
 
-
-
-    window.PlannerApp = PlannerApp;
-
-
+  
   </script>
   <!-- ⚡ Firebase 로그인 상태 확인 후 React 렌더링 (ES Modules) -->
   <script type="module">

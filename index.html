@@ -20,6 +20,23 @@
 </head>
 
 <body>
+<!-- 🌙✨ 왼쪽 고정 메모 패널 -->
+<div id="quick-memo"
+  class="fixed top-20 left-5 w-52 h-72 p-3 rounded-lg shadow-lg z-50 hidden sm:block
+  bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-700">
+
+  <h3 class="text-sm font-semibold mb-2 text-indigo-600 dark:text-indigo-300">
+    ✏️ 빠른 메모
+  </h3>
+
+  <textarea
+    id="quickMemoInput"
+    class="w-full h-56 p-2 rounded border text-sm resize-none
+    bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600
+    text-gray-900 dark:text-gray-200"
+    placeholder="여기에 생각나는 걸 자유롭게 적어줘…"
+  ></textarea>
+</div>
 
 
   <style>
@@ -2784,7 +2801,96 @@ const updateTarget = (proj, val) => {
     });
   </script>
 
+<script>
+  // 🔹 빠른 메모 자동 저장
+  const memoBox = document.getElementById("quickMemoInput");
+  const savedMemo = localStorage.getItem("writer_quickmemo") || "";
+  memoBox.value = savedMemo;
 
+  memoBox.addEventListener("input", () => {
+    localStorage.setItem("writer_quickmemo", memoBox.value);
+  });
+
+  // 🔹 로그인 후에도 유지 (React 렌더링 영향 없음)
+  window.addEventListener("DOMContentLoaded", () => {
+    const saved = localStorage.getItem("writer_quickmemo") || "";
+    memoBox.value = saved;
+  });
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+  // 🔥 1) Firebase 초기화 (이미 있다면 그대로 복붙하되 중복 초기화하지 않게 조정)
+  const firebaseConfig = {
+    apiKey: "YOUR_KEY",
+    authDomain: "YOUR_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_BUCKET",
+    messagingSenderId: "YOUR_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const memoBox = document.getElementById("quickMemoInput");
+
+  // 🔹 먼저 localStorage에서 즉시 불러오기 (화면에 빈칸 방지)
+  const localBackup = localStorage.getItem("writer_quickmemo") || "";
+  memoBox.value = localBackup;
+
+  let currentUid = null;
+  let unsubscribe = null; // Firestore 실시간 수신 해제 함수
+
+  // 🔥 2) 로그인 감지
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUid = user.uid;
+      const memoRef = doc(db, "users", currentUid, "memo", "quick");
+
+      // 🔥 3) Firestore 실시간 반영
+      unsubscribe = onSnapshot(memoRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          memoBox.value = data.text || "";
+          localStorage.setItem("writer_quickmemo", memoBox.value);
+        }
+      });
+
+      // 🔥 4) Firestore에 문서가 없다면 생성
+      const memoDoc = await getDoc(memoRef);
+      if (!memoDoc.exists()) {
+        await setDoc(memoRef, {
+          text: localBackup,
+          updatedAt: new Date()
+        });
+      }
+
+    } else {
+      // 로그아웃 상태 → localStorage만 사용
+      currentUid = null;
+      if (unsubscribe) unsubscribe();
+    }
+  });
+
+  // 🔥 5) 입력 시 Firestore & localStorage에 자동 저장
+  memoBox.addEventListener("input", async () => {
+    const value = memoBox.value;
+    localStorage.setItem("writer_quickmemo", value);
+
+    if (!currentUid) return; // 로그인 전이면 Firestore 저장 안 함
+
+    const memoRef = doc(db, "users", currentUid, "memo", "quick");
+    await setDoc(memoRef, {
+      text: value,
+      updatedAt: new Date()
+    });
+  });
+</script>
 
 </body>
 

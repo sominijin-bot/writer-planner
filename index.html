@@ -1058,7 +1058,7 @@ const [activeRoyaltyProject, setActiveRoyaltyProject] = React.useState(null);
 const royalties = JSON.parse(localStorage.getItem("writer_royalties") || "[]");
 const grouped = {
   byYear: royalties.reduce((acc, r) => {
-    const y = (r.date || "").slice(0, 4) || "미지정";
+    const y = normalizeDate(r.date).slice(0, 4);
     acc[y] = (acc[y] || 0) + Number(r.amount || 0);
     return acc;
   }, {}),
@@ -1070,14 +1070,18 @@ const grouped = {
 };
 
          // 월별 합계 [ ["2025-10", 123456], ... ]
-        const months = Object.entries(
-          royalties.reduce((acc, r) => {
-            const ym = normalizeDate(r.date).slice(0, 7);
-            acc[ym] = (acc[ym] || 0) + Number(r.amount || 0);
-            return acc;
-          }, {})
-        ).sort(([a], [b]) => a.localeCompare(b));
+        let months = Object.entries(
+  royalties.reduce((acc, r) => {
+    const ym = normalizeDate(r.date).slice(0, 7);
+    acc[ym] = (acc[ym] || 0) + Number(r.amount || 0);
+    return acc;
+  }, {})
+).sort(([a], [b]) => a.localeCompare(b));
 
+// 📌 최근 12개월만 자르기
+if (months.length > 12) {
+  months = months.slice(-12);
+}
           return {
           total,
           sessions,
@@ -2517,7 +2521,7 @@ const updateTarget = (proj, val) => {
 
     const months = Object.entries(
       royalties.reduce((acc, r) => {
-        const ym = (r.date || "").slice(0, 7) || "미지정";
+        const ym = normalizeDate(r.date).slice(0, 7);
         acc[ym] = (acc[ym] || 0) + Number(r.amount || 0);
         return acc;
       }, {})
@@ -2837,7 +2841,20 @@ const updateTarget = (proj, val) => {
     localStorage.setItem("calendar_tasks", JSON.stringify(cloudData.calendar));
 
   if (cloudData.royalties) {
-    localStorage.setItem("writer_royalties", JSON.stringify(cloudData.royalties));
+    const local = JSON.parse(localStorage.getItem("writer_royalties") || "[]");
+const cloud = cloudData.royalties || [];
+
+// 날짜+제목 완전 같은 중복 제거 후 병합
+const merged = [...local, ...cloud].reduce((acc, cur) => {
+  const key = cur.date + cur.title + cur.amount;
+  if (!acc.map.has(key)) {
+    acc.map.set(key, true);
+    acc.list.push(cur);
+  }
+  return acc;
+}, { map: new Map(), list: [] }).list;
+
+localStorage.setItem("writer_royalties", JSON.stringify(merged));
     window.dispatchEvent(new Event("royaltyDataUpdated"));
   }
 

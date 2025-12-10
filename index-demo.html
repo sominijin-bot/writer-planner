@@ -263,23 +263,22 @@
 
        // ✅ 기본 작품 리스트 (최초 1회용 기본값)
     const DEFAULT_PROJECTS = [
-      "낫카피",
-      "술 끊겠습니다",
-      "그 공작이 내 구원이 될 리 없잖아",
-      "임시 각인 가이드",
-      "불협화음 소나타",
-      "초단편",
-      "이 꽃의 주인은 누구?",
-      "기타"
+      "작품 A",
+  "작품 B",
+  "작품 C",
+  "작품 D",
+  "초단편",
+  "아이디어 노트",
+  "기타"
     ];
 
     // ✅ localStorage에서 작품 리스트 불러오기
     function loadProjectsFromLocal() {
       try {
-        const saved = JSON.parse(localStorage.getItem("writer_projects") || "[]");
+        const saved = JSON.parse(localStorage.getItem("demo_projects") || "[]");
         if (Array.isArray(saved) && saved.length > 0) return saved;
       } catch (e) {
-        console.error("writer_projects 로드 실패:", e);
+        console.error("demo_projects 로드 실패:", e);
       }
       return DEFAULT_PROJECTS;
     }
@@ -313,13 +312,13 @@
 
     function CalendarSection({ darkMode }) {
       const [tasks, setTasks] = React.useState(() => {
-        return JSON.parse(localStorage.getItem("calendar_tasks") || "{}");
+        return JSON.parse(localStorage.getItem("demo_calendar") || "{}");
       });
       const [selectedDate, setSelectedDate] = React.useState(null);
 
 
       React.useEffect(() => {
-        localStorage.setItem("calendar_tasks", JSON.stringify(tasks));
+        localStorage.setItem("demo_calendar", JSON.stringify(tasks));
       }, [tasks]);
 
       const today = new Date();
@@ -440,16 +439,9 @@
     }
 
    function RoyaltySection({ darkMode }) {
-    // 날짜 형식 강제 정규화 (2026-1-5 → 2026-01-05)
-function normalizeDate(dateStr) {
-  if (!dateStr) return "";
-  const [y, m, d] = dateStr.split("-");
-  return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
-}
-
     // 📌 작품별 인세 모달 상태
   const [royalties, setRoyalties] = React.useState(() => {
-    return JSON.parse(localStorage.getItem("writer_royalties") || "[]");
+    return JSON.parse(localStorage.getItem("demo_royalties") || "[]");
   });
   const [showList, setShowList] = React.useState(false); // ✅ 인세 내역 접기/펼치기용
 
@@ -466,7 +458,7 @@ function normalizeDate(dateStr) {
 
   const save = (data) => {
     setRoyalties(data);
-    localStorage.setItem("writer_royalties", JSON.stringify(data));
+    localStorage.setItem("demo_royalties", JSON.stringify(data));
     window.dispatchEvent(new Event("royaltyDataUpdated"));
   };
 
@@ -508,9 +500,8 @@ function normalizeDate(dateStr) {
 
   // ===== 계산 =====
   const now = new Date();
-  const ym = (d) => normalizeDate(d).slice(0, 7);
-const y  = (d) => normalizeDate(d).slice(0, 4);
-
+  const ym = (d) => (d || "").slice(0, 7);
+  const y = (d) => (d || "").slice(0, 4);
 
   const thisYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -704,7 +695,7 @@ const y  = (d) => normalizeDate(d).slice(0, 4);
 
     function ContractSection({ darkMode }) {
       const [contracts, setContracts] = React.useState(() => {
-        const raw = localStorage.getItem("writer_contracts_v1");
+        const raw = localStorage.getItem("demo_contracts");
         return raw ? JSON.parse(raw) : [];
       });
 
@@ -927,7 +918,7 @@ const [activeRoyaltyProject, setActiveRoyaltyProject] = React.useState(null);
 
       // 작품 리스트 변경 시 localStorage에 저장
       useEffect(() => {
-        localStorage.setItem("writer_projects", JSON.stringify(projects));
+        localStorage.setItem("demo_projects", JSON.stringify(projects));
       }, [projects]);
 
       // ✅ 다크모드 불러오기
@@ -958,7 +949,7 @@ const [activeRoyaltyProject, setActiveRoyaltyProject] = React.useState(null);
 
       // 🧩 데이터 불러오기
       useEffect(() => {
-        const raw = localStorage.getItem("writer_planner_store_v4");
+        const raw = localStorage.getItem("demo_planner_store");
         if (raw) {
           try {
             setStore(JSON.parse(raw));
@@ -970,7 +961,7 @@ const [activeRoyaltyProject, setActiveRoyaltyProject] = React.useState(null);
 
       // 💾 저장
       useEffect(() => {
-        localStorage.setItem("writer_planner_store_v4", JSON.stringify(store));
+        localStorage.setItem("demo_planner_store", JSON.stringify(store));
       }, [store]);
 
       // ✅ 날짜별/작품별 데이터 접근
@@ -1055,7 +1046,7 @@ const [activeRoyaltyProject, setActiveRoyaltyProject] = React.useState(null);
         const hours = sessions * 0.5;
 
         // ✅ 인세 데이터 전역 통계 계산
-const royalties = JSON.parse(localStorage.getItem("writer_royalties") || "[]");
+const royalties = JSON.parse(localStorage.getItem("demo_royalties") || "[]");
 const grouped = {
   byYear: royalties.reduce((acc, r) => {
     const y = (r.date || "").slice(0, 4) || "미지정";
@@ -1072,7 +1063,7 @@ const grouped = {
          // 월별 합계 [ ["2025-10", 123456], ... ]
         const months = Object.entries(
           royalties.reduce((acc, r) => {
-            const ym = normalizeDate(r.date).slice(0, 7);
+            const ym = (r.date || "").slice(0, 7) || "미지정";
             acc[ym] = (acc[ym] || 0) + Number(r.amount || 0);
             return acc;
           }, {})
@@ -1251,11 +1242,11 @@ const grouped = {
         );
       };
 // ✅ 인세 데이터 전역 통계 계산
-const royalties = JSON.parse(localStorage.getItem("writer_royalties") || "[]");
+const royalties = JSON.parse(localStorage.getItem("demo_royalties") || "[]");
 
 const grouped = {
   byYear: royalties.reduce((acc, r) => {
-    const y = normalizeDate(r.date).slice(0, 4);
+    const y = (r.date || "").slice(0, 4) || "미지정";
     acc[y] = (acc[y] || 0) + Number(r.amount || 0);
     return acc;
   }, {}),
@@ -1495,7 +1486,7 @@ const grouped = {
                                   ...store,
                                   [dateStr]: n
                                 };
-                                localStorage.setItem("writer_planner_store_v4", JSON.stringify(updatedStore));
+                                localStorage.setItem("demo_planner_store", JSON.stringify(updatedStore));
                                 setStore(updatedStore); // 상태 갱신
                                 return n;
                               });
@@ -1915,13 +1906,13 @@ const grouped = {
 
             {(() => {
               // 목표 불러오기
-              const raw = localStorage.getItem("writer_targets");
+              const raw = localStorage.getItem("demo_targets");
               const targets = raw ? JSON.parse(raw) : {};
 
               // 목표 수정
 const updateTarget = (proj, val) => {
   const updated = { ...targets, [proj]: val };
-  localStorage.setItem("writer_targets", JSON.stringify(updated));
+  localStorage.setItem("demo_targets", JSON.stringify(updated));
   alert(`${proj} 목표가 ${val.toLocaleString()}자로 설정되었습니다.`);
 
   // ✅ 즉시 리렌더링 반영
@@ -2513,7 +2504,7 @@ const updateTarget = (proj, val) => {
 <div className="mt-6">
   <h3 className="font-semibold mb-2 text-indigo-700">📈 월별 인세 추이</h3>
   {(() => {
-    const royalties = JSON.parse(localStorage.getItem("writer_royalties") || "[]");
+    const royalties = JSON.parse(localStorage.getItem("demo_royalties") || "[]");
 
     const months = Object.entries(
       royalties.reduce((acc, r) => {
@@ -2622,13 +2613,13 @@ const updateTarget = (proj, val) => {
       </h2>
 
       {(() => {
-        const royalties = JSON.parse(localStorage.getItem("writer_royalties") || "[]");
+        const royalties = JSON.parse(localStorage.getItem("demo_royalties") || "[]");
         const filtered = royalties.filter(
           (r) => r.title === activeRoyaltyProject
         );
 
         const byYear = filtered.reduce((acc, r) => {
-          const y = normalizeDate(r.date).slice(0, 4);
+          const y = (r.date || "").slice(0, 4);
           acc[y] = (acc[y] || 0) + Number(r.amount || 0);
           return acc;
         }, {});
@@ -2743,39 +2734,37 @@ const updateTarget = (proj, val) => {
       );        // <- return 닫힘
     }           // <- PlannerApp 함수 닫힘
 
-    window.PlannerApp = PlannerApp;
+      window.PlannerApp = PlannerApp;
+  </script>  <!-- ✅ 여기서 text/babel 스크립트 닫기 -->
 
-  
+  <script>
+    // 🔹 빠른 메모 자동 저장
+    const memoBox = document.getElementById("quickMemoInput");
+    const savedMemo = localStorage.getItem("writer_quickmemo") || "";
+    memoBox.value = savedMemo;
+
+    memoBox.addEventListener("input", () => {
+      localStorage.setItem("writer_quickmemo", memoBox.value);
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const saved = localStorage.getItem("writer_quickmemo") || "";
+      memoBox.value = saved;
+    });
   </script>
-  <!-- ⚡ Firebase 로그인 상태 확인 후 React 렌더링 (ES Modules) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDDaQFVkQMG63wI7guyMPygx9QwaokMu7I",
-      authDomain: "writer-planner.firebaseapp.com",
-      projectId: "writer-planner",
-      storageBucket: "writer-planner.firebasestorage.app",
-      messagingSenderId: "590639652717",
-      appId: "1:590639652717:web:bc69fa99d82f6c5e760464"
-    };
+  <script>
+    // React 앱 바로 실행 (로그인 없이!)
+    const wait = setInterval(() => {
+      if (window.PlannerApp) {
+        clearInterval(wait);
+        const root = ReactDOM.createRoot(document.getElementById("root"));
+        root.render(React.createElement(window.PlannerApp));
+      }
+    }, 100);
+  </script>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-
-    // 로그인 버튼
-    const loginButton = document.createElement("button");
-    loginButton.innerText = "🔑 Google 로그인";
-    loginButton.className = "fixed bottom-5 right-5 bg-indigo-500 text-white px-4 py-2 rounded-lg shadow";
-    document.body.appendChild(loginButton);
-
-    // 로그인
-    loginButton.onclick = () => signInWithPopup(auth, provider);
-
+  <script>
     // 🌟 로그인 버튼 위 세로형 북마크 버튼바
     const bookmarkNav = document.createElement("div");
     bookmarkNav.className =
@@ -2790,7 +2779,6 @@ const updateTarget = (proj, val) => {
       { id: "contract-section", label: "계약" },
       { id: "royalty-section", label: "인세" },
     ];
-
 
     buttons.forEach(({ id, label }) => {
       const btn = document.createElement("button");
@@ -2809,174 +2797,7 @@ const updateTarget = (proj, val) => {
     });
 
     document.body.appendChild(bookmarkNav);
-
-
-
-    // 로그인 상태 감시
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        if (window.cloudLoaded) return;
-        window.cloudLoaded = true;
-
-        loginButton.innerText = `👋 ${user.displayName}님`;
-        loginButton.disabled = true;
-
-        const ref = doc(db, "users", user.uid);
-        const snap = await getDoc(ref);
-
-        if (snap.exists()) {
-          const cloudData = snap.data();
-          if (cloudData) {
-  if (cloudData.planner)
-    localStorage.setItem("writer_planner_store_v4", JSON.stringify(cloudData.planner));
-
-  if (cloudData.contracts)
-    localStorage.setItem("writer_contracts_v1", JSON.stringify(cloudData.contracts));
-
-  if (cloudData.calendar)
-    localStorage.setItem("calendar_tasks", JSON.stringify(cloudData.calendar));
-
-  if (cloudData.royalties) {
-    localStorage.setItem("writer_royalties", JSON.stringify(cloudData.royalties));
-    window.dispatchEvent(new Event("royaltyDataUpdated"));
-  }
-
-  if (cloudData.targets)
-    localStorage.setItem("writer_targets", JSON.stringify(cloudData.targets));
-          console.info("☁️ 클라우드 데이터 불러옴 (planner + contracts + targets)"); // ✅ 문구 수정
-        } else {
-          await setDoc(ref, {});
-        }
-   if (cloudData.projects)
-    localStorage.setItem("writer_projects", JSON.stringify(cloudData.projects));
-}
-
-        // ✅ 자동 백업 (목표 포함)
-                setInterval(async () => {
-          const planner   = JSON.parse(localStorage.getItem("writer_planner_store_v4") || "{}");
-          const contracts = JSON.parse(localStorage.getItem("writer_contracts_v1") || "[]");
-          const targets   = JSON.parse(localStorage.getItem("writer_targets") || "{}");
-          const calendar  = JSON.parse(localStorage.getItem("calendar_tasks") || "{}");
-          const royalties = JSON.parse(localStorage.getItem("writer_royalties") || "[]");
-          const projects  = JSON.parse(localStorage.getItem("writer_projects") || "[]"); // ✅ 추가
-
-          await setDoc(ref, { planner, contracts, targets, calendar, royalties, projects });
-
-          console.log("✅ 클라우드 자동 백업 완료 (planner + contracts + targets + projects)");
-        }, 30000);
-
-
-        // ✅ 로그인 후에만 React 앱 실행
-        if (!window.reactStarted) {
-          window.reactStarted = true;
-
-          // 🔹 Babel 변환이 끝났는지 확인 후 실행
-          const waitForPlannerApp = setInterval(() => {
-            if (window.PlannerApp) {
-              clearInterval(waitForPlannerApp);
-              const root = ReactDOM.createRoot(document.getElementById("root"));
-              root.render(React.createElement(window.PlannerApp));
-            }
-          }, 200);
-        }
-
-      } else {
-        console.log("로그인 필요");
-      }
-    });
   </script>
 
-<script>
-  // 🔹 빠른 메모 자동 저장
-  const memoBox = document.getElementById("quickMemoInput");
-  const savedMemo = localStorage.getItem("writer_quickmemo") || "";
-  memoBox.value = savedMemo;
-
-  memoBox.addEventListener("input", () => {
-    localStorage.setItem("writer_quickmemo", memoBox.value);
-  });
-
-  // 🔹 로그인 후에도 유지 (React 렌더링 영향 없음)
-  window.addEventListener("DOMContentLoaded", () => {
-    const saved = localStorage.getItem("writer_quickmemo") || "";
-    memoBox.value = saved;
-  });
-</script>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-
-  // 🔥 1) Firebase 초기화 (이미 있다면 그대로 복붙하되 중복 초기화하지 않게 조정)
-  const firebaseConfig = {
-    apiKey: "YOUR_KEY",
-    authDomain: "YOUR_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_BUCKET",
-    messagingSenderId: "YOUR_ID",
-    appId: "YOUR_APP_ID"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-
-  const memoBox = document.getElementById("quickMemoInput");
-
-  // 🔹 먼저 localStorage에서 즉시 불러오기 (화면에 빈칸 방지)
-  const localBackup = localStorage.getItem("writer_quickmemo") || "";
-  memoBox.value = localBackup;
-
-  let currentUid = null;
-  let unsubscribe = null; // Firestore 실시간 수신 해제 함수
-
-  // 🔥 2) 로그인 감지
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      currentUid = user.uid;
-      const memoRef = doc(db, "users", currentUid, "memo", "quick");
-
-      // 🔥 3) Firestore 실시간 반영
-      unsubscribe = onSnapshot(memoRef, (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          memoBox.value = data.text || "";
-          localStorage.setItem("writer_quickmemo", memoBox.value);
-        }
-      });
-
-      // 🔥 4) Firestore에 문서가 없다면 생성
-      const memoDoc = await getDoc(memoRef);
-      if (!memoDoc.exists()) {
-        await setDoc(memoRef, {
-          text: localBackup,
-          updatedAt: new Date()
-        });
-      }
-
-    } else {
-      // 로그아웃 상태 → localStorage만 사용
-      currentUid = null;
-      if (unsubscribe) unsubscribe();
-    }
-  });
-
-  // 🔥 5) 입력 시 Firestore & localStorage에 자동 저장
-  memoBox.addEventListener("input", async () => {
-    const value = memoBox.value;
-    localStorage.setItem("writer_quickmemo", value);
-
-    if (!currentUid) return; // 로그인 전이면 Firestore 저장 안 함
-
-    const memoRef = doc(db, "users", currentUid, "memo", "quick");
-    await setDoc(memoRef, {
-      text: value,
-      updatedAt: new Date()
-    });
-  });
-</script>
-
 </body>
-
 </html>

@@ -441,11 +441,7 @@
 
    function RoyaltySection({ darkMode }) {
     // 날짜 형식 강제 정규화 (2026-1-5 → 2026-01-05)
-function normalizeDate(dateStr) {
-  if (!dateStr) return "";
-  const [y, m, d] = dateStr.split("-");
-  return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
-}
+
 
     // 📌 작품별 인세 모달 상태
   const [royalties, setRoyalties] = React.useState(() => {
@@ -916,7 +912,11 @@ const y  = (d) => normalizeDate(d).slice(0, 4);
         </div>
       );
     }
-
+function normalizeDate(dateStr) {
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-");
+  return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+}
 
     function PlannerApp() {
       const [darkMode, setDarkMode] = useState(false);

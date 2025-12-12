@@ -620,7 +620,7 @@ const y  = (d) => normalizeDate(d).slice(0, 4);
           )}
         </div>
         <div>
-          연도 총 정산금액:{" "}
+          총 정산금액:{" "}
           <b>{yearTotalAmount.toLocaleString()} 원</b> / 세액 합계:{" "}
           {totalTax.toLocaleString()} 원 / 누적 입금액:{" "}
           {totalNet.toLocaleString()} 원 / 기타 제외 수익:{" "}
@@ -2513,11 +2513,14 @@ const updateTarget = (proj, val) => {
           <RoyaltySection darkMode={darkMode} />
 
 
-         {/* 📊 월별 인세 그래프 */}
+ {/* 📊 월별 인세 그래프 */}
 <div className="mt-6">
   <h3 className="font-semibold mb-2 text-indigo-700">📈 월별 인세 추이</h3>
+
   {(() => {
-    const royalties = JSON.parse(localStorage.getItem("writer_royalties") || "[]");
+    const royalties = JSON.parse(
+      localStorage.getItem("writer_royalties") || "[]"
+    );
 
     const months = Object.entries(
       royalties.reduce((acc, r) => {
@@ -2527,20 +2530,31 @@ const updateTarget = (proj, val) => {
       }, {})
     ).sort(([a], [b]) => a.localeCompare(b));
 
-    if (months.length === 0)
-      return <p className="text-sm text-gray-500">등록된 인세 데이터가 없습니다.</p>;
+    if (months.length === 0) {
+      return (
+        <p className="text-sm text-gray-500">
+          등록된 인세 데이터가 없습니다.
+        </p>
+      );
+    }
 
-    const maxVal = Math.max(...months.map(([_, v]) => v), 1);
+    // ✅ 최근 12개월
+    const recentMonths = months.slice(-12);
+    const maxRoyaltyVal = Math.max(
+      ...recentMonths.map(([_, v]) => v),
+      1
+    );
 
     return (
-      <div className={`flex items-end gap-2 h-48 p-3 rounded-lg overflow-x-auto ${
-        darkMode ? "bg-gray-800" : "bg-gray-50"
-      }`}>
-        {months.map(([m, val], i) => (
-          <div key={i} className="flex flex-col items-center justify-end flex-1">
+      <div className="flex items-end gap-2 h-48 p-3 rounded-lg overflow-x-auto bg-gray-50 dark:bg-gray-800">
+        {recentMonths.map(([m, val], i) => (
+          <div
+            key={i}
+            className="flex flex-col items-center justify-end flex-1 min-w-[36px]"
+          >
             <div
               className="bg-indigo-500 rounded-t w-6"
-              style={{ height: `${(val / maxVal) * 160}px` }}
+              style={{ height: `${(val / maxRoyaltyVal) * 160}px` }}
             />
             <span className="text-[11px] mt-1">{m}</span>
           </div>
@@ -2549,6 +2563,7 @@ const updateTarget = (proj, val) => {
     );
   })()}
 </div>
+
 
 
           {/* 📆 연도별 인세 통계 */}

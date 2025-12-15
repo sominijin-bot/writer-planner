@@ -1813,7 +1813,10 @@ const grouped = {
 
             {(() => {
               const today = store[dateStr] || {};
-              const entries = Object.entries(today).filter(([k]) => k !== "logs" && k !== "startTime" && k !== "startWords");
+const entries = Object.entries(today).filter(
+  ([_, v]) => v && Array.isArray(v.logs)
+);
+
 
               if (entries.length === 0) {
                 return <p className="text-gray-500 text-sm">오늘 작성된 작품이 없습니다.</p>;
@@ -2028,20 +2031,17 @@ const grouped = {
   {(() => {
     const today = store[dateStr] || {};
 
-    const projectSummaries = Object.entries(today).map(
-      ([proj, data]) => {
-        const logs = data.logs || [];
-        const total = logs.reduce(
-          (sum, l) => sum + (l.diff || 0),
-          0
-        );
-        const sessions = logs.length;
-        const avg =
-          sessions > 0 ? Math.round(total / sessions) : 0;
+const projectSummaries = Object.entries(today)
+  .filter(([_, data]) => data && Array.isArray(data.logs))
+  .map(([proj, data]) => {
+    const logs = data.logs;
+    const total = logs.reduce((sum, l) => sum + (l.diff || 0), 0);
+    const sessions = logs.length;
+    const avg = sessions > 0 ? Math.round(total / sessions) : 0;
 
-        return { proj, total, sessions, avg };
-      }
-    );
+    return { proj, total, sessions, avg };
+  });
+
 
     const grandTotal = projectSummaries.reduce(
       (s, p) => s + p.total,

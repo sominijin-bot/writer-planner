@@ -1999,98 +1999,171 @@ const grouped = {
 
 
 
-          {/* 📊 작품별 요약 통계 */}
-          <div className={`${darkMode
-            ? "bg-gray-850 text-gray-200 border-gray-700"
-            : "bg-white text-gray-900 border-gray-200"} p-4 rounded-lg`}>
+         {/* 📊 작품별 요약 통계 */}
+<div
+  className={`${darkMode
+    ? "bg-gray-850 text-gray-200 border-gray-700"
+    : "bg-white text-gray-900 border-gray-200"} p-4 rounded-lg`}
+>
+  <h2 className="font-semibold text-lg mb-4">
+    📊 오늘의 작품별 요약
+  </h2>
+{/* 📝 오늘 작업 한 줄 요약 */}
+<div className={`mb-4 p-3 rounded-lg ${
+  darkMode
+    ? "bg-gray-800 border border-gray-700"
+    : "bg-gray-50 border border-gray-200"
+}`}>
+  <input
+    type="text"
+    value={store[dateStr]?.dailySummary || ""}
+    onChange={(e) => {
+      const value = e.target.value;
+      setStore((prev) => ({
+        ...prev,
+        [dateStr]: {
+          ...prev[dateStr],
+          dailySummary: value,
+        },
+      }));
+    }}
+    placeholder="오늘 어떤 작업을 했는지 한 줄로 남겨두세요"
+    className="w-full text-sm px-3 py-2 rounded
+               bg-white dark:bg-gray-700
+               border border-gray-300 dark:border-gray-600
+               text-gray-800 dark:text-gray-100"
+  />
+</div>
 
+  {(() => {
+    const today = store[dateStr] || {};
 
-            <h2 className="font-semibold text-lg mb-4">📊 오늘의 작품별 요약</h2>
+    const projectSummaries = Object.entries(today).map(
+      ([proj, data]) => {
+        const logs = data.logs || [];
+        const total = logs.reduce(
+          (sum, l) => sum + (l.diff || 0),
+          0
+        );
+        const sessions = logs.length;
+        const avg =
+          sessions > 0 ? Math.round(total / sessions) : 0;
 
-            {(() => {
-              const today = store[dateStr] || {};
-              const projectSummaries = Object.entries(today).map(([proj, data]) => {
-                const logs = data.logs || [];
-                const total = logs.reduce((sum, l) => sum + (l.diff || 0), 0);
-                const sessions = logs.length;
-                const avg = sessions > 0 ? Math.round(total / sessions) : 0;
-                return { proj, total, sessions, avg };
-              });
+        return { proj, total, sessions, avg };
+      }
+    );
 
-              const grandTotal = projectSummaries.reduce((s, p) => s + p.total, 0);
+    const grandTotal = projectSummaries.reduce(
+      (s, p) => s + p.total,
+      0
+    );
 
-              if (projectSummaries.length === 0) {
-                return <p className="text-gray-500 text-sm">오늘 기록된 작품이 없습니다.</p>;
-              }
+    if (projectSummaries.length === 0) {
+      return (
+        <p className="text-gray-500 text-sm">
+          오늘 기록된 작품이 없습니다.
+        </p>
+      );
+    }
 
-              return (
-                <>
-                  {/* 전체 총합 */}
-                  <div className={`flex justify-between items-center mb-4 p-3 rounded-lg ${darkMode ? "bg-gray-800 text-gray-200 border border-gray-700" : "bg-indigo-50 text-gray-900 border border-gray-200"
-                    }`}>
+    return (
+      <>
+        {/* 전체 총합 */}
+        <div
+          className={`flex justify-between items-center mb-4 p-3 rounded-lg ${
+            darkMode
+              ? "bg-gray-800 text-gray-200 border border-gray-700"
+              : "bg-indigo-50 text-gray-900 border border-gray-200"
+          }`}
+        >
+          <span className="font-semibold text-indigo-700">
+            전체 합계
+          </span>
+          <span className="font-bold text-indigo-600 text-lg">
+            {grandTotal.toLocaleString()}자
+          </span>
+        </div>
 
-                    <span className="font-semibold text-indigo-700">전체 합계</span>
-                    <span className="font-bold text-indigo-600 text-lg">
-                      {grandTotal.toLocaleString()}자
-                    </span>
+        {/* 작품별 표 */}
+        <table className="w-full border-collapse mb-6 text-sm">
+          <thead>
+            <tr
+              className={`text-left ${
+                darkMode
+                  ? "bg-gray-900 text-indigo-300 border-b border-gray-700"
+                  : "bg-gray-100 text-indigo-600 border-b border-gray-300"
+              }`}
+            >
+              <th className="px-4 py-2">작품명</th>
+              <th className="px-4 py-2">세션 수</th>
+              <th className="px-4 py-2">총합</th>
+              <th className="px-4 py-2">평균</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {projectSummaries.map((p) => (
+              <tr key={p.proj}>
+                {/* 작품명 + 한 줄 요약 */}
+                <td className="border p-2 align-top">
+                  <div className="text-indigo-600 font-medium">
+                    {p.proj}
                   </div>
+               </td>
 
-                  {/* 작품별 표 */}
-                  <table className="w-full border-collapse mb-6 text-sm">
-                    <thead>
-                      <tr
-                        className={`text-left ${darkMode
-                            ? "bg-gray-900 text-indigo-300 border-b border-gray-700"
-                            : "bg-gray-100 text-indigo-600 border-b border-gray-300"
-                          }`}
-                      >
-                        <th className="px-4 py-2">작품명</th>
-                        <th className="px-4 py-2">세션 수</th>
-                        <th className="px-4 py-2">총합</th>
-                        <th className="px-4 py-2">평균</th>
-                      </tr>
-                    </thead>
+                <td className="border p-2 text-center">
+                  {p.sessions}
+                </td>
 
-                    <tbody>
-                      {projectSummaries.map((p) => (
-                        <tr key={p.proj} className="hover:bg-gray-50">
-                          <td className="border p-2 text-indigo-600 font-medium">{p.proj}</td>
-                          <td className="border p-2 text-center">{p.sessions}</td>
-                          <td className="border p-2 text-center text-indigo-700">
-                            {p.total.toLocaleString()}자
-                          </td>
-                          <td className="border p-2 text-center text-gray-700">
-                            {p.avg.toLocaleString()}자
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <td className="border p-2 text-center text-indigo-700">
+                  {p.total.toLocaleString()}자
+                </td>
 
-                  {/* 그래프 */}
-                  <h3 className="font-semibold mb-2 text-gray-700">📈 시각화</h3>
-                  <div className={`graph-area flex items-end gap-2 h-48 p-4 rounded-lg overflow-x-auto ${darkMode ? "text-gray-200" : "text-gray-900"
-                    }`}>
+                <td className="border p-2 text-center text-gray-700">
+                  {p.avg.toLocaleString()}자
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
+        {/* 그래프 */}
+        <h3 className="font-semibold mb-2 text-gray-700">
+          📈 시각화
+        </h3>
 
-                    {projectSummaries.map((p) => {
-                      const maxValue = Math.max(...projectSummaries.map((x) => x.total), 1);
-                      const height = (p.total / maxValue) * 160;
-                      return (
-                        <div key={p.proj} className="flex flex-col items-center justify-end flex-1">
-                          <div
-                            className="bg-indigo-500 rounded-t w-6"
-                            style={{ height: `${height}px` }}
-                          ></div>
-                          <span className="text-xs mt-2 text-center break-keep">{p.proj}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              );
-            })()}
-          </div>
+        <div
+          className={`graph-area flex items-end gap-2 h-48 p-4 rounded-lg overflow-x-auto ${
+            darkMode ? "text-gray-200" : "text-gray-900"
+          }`}
+        >
+          {projectSummaries.map((p) => {
+            const maxValue = Math.max(
+              ...projectSummaries.map((x) => x.total),
+              1
+            );
+            const height = (p.total / maxValue) * 160;
+
+            return (
+              <div
+                key={p.proj}
+                className="flex flex-col items-center justify-end flex-1"
+              >
+                <div
+                  className="bg-indigo-500 rounded-t w-6"
+                  style={{ height: `${height}px` }}
+                />
+                <span className="text-xs mt-2 text-center break-keep">
+                  {p.proj}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  })()}
+</div>
           {/* 📅 월간 / 연간 누적 통계 */}
           <div id="monthly-section"
             className={`${darkMode
@@ -3329,6 +3402,24 @@ localStorage.setItem("writer_royalties", JSON.stringify(merged));
   memoBox.addEventListener("input", () => {
     localStorage.setItem("writer_quickmemo", memoBox.value);
   });
+
+(function () {
+  const textarea = document.getElementById("quickMemoInput");
+  if (!textarea) return;
+
+  const key = "quick_memo_" + getTodayKey();
+
+  // 🔹 불러오기
+  const saved = localStorage.getItem(key);
+  if (saved) {
+    textarea.value = saved;
+  }
+
+  // 🔹 입력 시 저장
+  textarea.addEventListener("input", () => {
+    localStorage.setItem(key, textarea.value);
+  });
+})();
 
   // 🔹 로그인 후에도 유지 (React 렌더링 영향 없음)
   window.addEventListener("DOMContentLoaded", () => {

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>작가용 작업 플래너</title>
+  <title>작업 플래너</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -1688,7 +1688,7 @@ const grouped = {
             }`}
         >
 
-          <h1 className="text-2xl sm:text-3xl font-bold mb-6">작가용 작업 플래너</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-6">작업 플래너</h1>
 
 
 
@@ -3037,6 +3037,15 @@ const updateTarget = (proj, val) => {
               style={{ height: `${(val / maxRoyaltyVal) * 160}px` }}
             />
             <span className="text-[11px] mt-1">{m}</span>
+ {/* ✅ 추가: 월별 금액 표시 */}
+    <span
+      className={`text-[10px] leading-none ${
+        darkMode ? "text-indigo-300" : "text-indigo-600"
+      }`}
+    >
+      {Number(val).toLocaleString()}
+    </span>
+
           </div>
         ))}
       </div>

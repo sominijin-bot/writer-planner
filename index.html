@@ -472,6 +472,22 @@
     return JSON.parse(localStorage.getItem("writer_royalties") || "[]");
   });
   const [showList, setShowList] = React.useState(false); // ✅ 인세 내역 접기/펼치기용
+// ✅ 요약 기준 연도 (기본: 올해)
+const now = new Date();
+const thisYear = String(now.getFullYear());
+
+const years = Array.from(
+  new Set(
+    royalties
+      .map((r) => normalizeDate(r.date).slice(0, 4))
+      .filter(Boolean)
+  )
+).sort((a, b) => Number(b) - Number(a));
+
+if (!years.includes(thisYear)) years.unshift(thisYear);
+
+const [summaryYear, setSummaryYear] = React.useState(thisYear);
+const [showAllTotals, setShowAllTotals] = React.useState(false);
 
   const emptyRow = {
     date: "",
@@ -527,16 +543,14 @@
   };
 
   // ===== 계산 =====
-  const now = new Date();
-  const ym = (d) => normalizeDate(d).slice(0, 7);
+ const ym = (d) => normalizeDate(d).slice(0, 7);
 const y  = (d) => normalizeDate(d).slice(0, 4);
 
 
   const thisYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevYM = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
-  const thisYear = String(now.getFullYear());
-
+ 
   const monthTotal = royalties
     .filter((r) => ym(r.date) === thisYM)
     .reduce((a, r) => a + Number(r.amount || 0), 0);
@@ -551,14 +565,26 @@ const y  = (d) => normalizeDate(d).slice(0, 4);
     changeText = diffRate < 0 ? `▼ ${absRate}% 감소` : `▲ ${absRate}% 증가`;
   }
 
-  const yearTotalAmount = royalties
-    .filter((r) => y(r.date) === thisYear)
-    .reduce((a, r) => a + Number(r.amount || 0), 0);
-  const totalTax = royalties.reduce((a, r) => a + Number(r.tax || 0), 0);
-  const totalNet = royalties.reduce((a, r) => a + Number(r.net || 0), 0);
-  const nonEtcIncome = royalties
-    .filter((r) => r.type !== "기타")
-    .reduce((a, r) => a + Number(r.amount || 0), 0);
+ // ✅ 선택 연도 데이터만 뽑기
+const yearRows = royalties.filter(
+  (r) => normalizeDate(r.date).slice(0, 4) === summaryYear
+);
+
+// ✅ 선택 연도 합계 (요약줄이 이걸로 통일됨)
+const yearTotalAmount = yearRows.reduce((a, r) => a + Number(r.amount || 0), 0);
+const yearTax = yearRows.reduce((a, r) => a + Number(r.tax || 0), 0);
+const yearNet = yearRows.reduce((a, r) => a + Number(r.net || 0), 0);
+const yearNonEtcIncome = yearRows
+  .filter((r) => r.type !== "기타")
+  .reduce((a, r) => a + Number(r.amount || 0), 0);
+
+// ✅ 전체 누적(토글로만 보여줄 값)
+const allTotalAmount = royalties.reduce((a, r) => a + Number(r.amount || 0), 0);
+const allTax = royalties.reduce((a, r) => a + Number(r.tax || 0), 0);
+const allNet = royalties.reduce((a, r) => a + Number(r.net || 0), 0);
+const allNonEtcIncome = royalties
+  .filter((r) => r.type !== "기타")
+  .reduce((a, r) => a + Number(r.amount || 0), 0);
 
   return (
     <div
@@ -631,26 +657,66 @@ const y  = (d) => normalizeDate(d).slice(0, 4);
       </button>
 
       {/* 요약 */}
-      <div className="text-sm mb-3 leading-6">
-        <div>
-          이번 달 총 인세:{" "}
-          <span className="font-semibold">{monthTotal.toLocaleString()} 원</span>{" "}
-          {prevMonthTotal > 0 ? (
-            <span className={/감소/.test(changeText) ? "text-rose-400" : "text-green-400"}>
-              {changeText}
-            </span>
-          ) : (
-            <span className="text-gray-400">({changeText})</span>
-          )}
-        </div>
-        <div>
-          총 정산금액:{" "}
-          <b>{yearTotalAmount.toLocaleString()} 원</b> / 세액 합계:{" "}
-          {totalTax.toLocaleString()} 원 / 누적 입금액:{" "}
-          {totalNet.toLocaleString()} 원 / 기타 제외 수익:{" "}
-          {nonEtcIncome.toLocaleString()} 원
-        </div>
-      </div>
+<div className="text-sm mb-3 leading-6">
+  <div>
+    이번 달 총 인세:{" "}
+    <span className="font-semibold">{monthTotal.toLocaleString()} 원</span>{" "}
+    {prevMonthTotal > 0 ? (
+      <span className={/감소/.test(changeText) ? "text-rose-400" : "text-green-400"}>
+        {changeText}
+      </span>
+    ) : (
+      <span className="text-gray-400">({changeText})</span>
+    )}
+  </div>
+
+  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+    <span className="text-gray-400">요약 연도</span>
+
+    <select
+      value={summaryYear}
+      onChange={(e) => setSummaryYear(e.target.value)}
+      className={`px-2 py-1 rounded border text-sm ${
+        darkMode
+          ? "bg-gray-900 border-gray-700 text-gray-100"
+          : "bg-white border-gray-300 text-gray-900"
+      }`}
+    >
+      {years.map((yy) => (
+        <option key={yy} value={yy}>
+          {yy}
+        </option>
+      ))}
+    </select>
+
+    <span className="ml-1">
+      총 정산금액: <b>{yearTotalAmount.toLocaleString()} 원</b> /
+      세액 합계: {yearTax.toLocaleString()} 원 /
+      누적 입금액: {yearNet.toLocaleString()} 원 /
+      기타 제외 수익: {yearNonEtcIncome.toLocaleString()} 원
+    </span>
+
+    <button
+      onClick={() => setShowAllTotals((v) => !v)}
+      className={`ml-auto text-xs underline ${
+        darkMode ? "text-indigo-300" : "text-indigo-600"
+      }`}
+      type="button"
+    >
+      {showAllTotals ? "전체 누적 숨기기" : "전체 누적 보기"}
+    </button>
+  </div>
+
+  {showAllTotals && (
+    <div className="text-xs text-gray-400 mt-1">
+      전체 누적: {allTotalAmount.toLocaleString()} 원 /
+      세액 {allTax.toLocaleString()} 원 /
+      실입금 {allNet.toLocaleString()} 원 /
+      기타 제외 {allNonEtcIncome.toLocaleString()} 원
+    </div>
+  )}
+</div>
+
 
       {/* 인세 내역 */}
       <div className="flex justify-between items-center mb-2">
@@ -3037,15 +3103,7 @@ const updateTarget = (proj, val) => {
               style={{ height: `${(val / maxRoyaltyVal) * 160}px` }}
             />
             <span className="text-[11px] mt-1">{m}</span>
- {/* ✅ 추가: 월별 금액 표시 */}
-    <span
-      className={`text-[10px] leading-none ${
-        darkMode ? "text-indigo-300" : "text-indigo-600"
-      }`}
-    >
-      {Number(val).toLocaleString()}
-    </span>
-
+            
           </div>
         ))}
       </div>

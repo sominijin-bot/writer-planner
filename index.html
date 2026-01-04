@@ -3103,7 +3103,14 @@ const updateTarget = (proj, val) => {
               style={{ height: `${(val / maxRoyaltyVal) * 160}px` }}
             />
             <span className="text-[11px] mt-1">{m}</span>
-            
+             {/* ✅ 추가: 월별 금액 표시 */}
+    <span
+      className={`text-[10px] leading-none ${
+        darkMode ? "text-indigo-300" : "text-indigo-600"
+      }`}
+    >
+      {Number(val).toLocaleString()}
+    </span>
           </div>
         ))}
       </div>

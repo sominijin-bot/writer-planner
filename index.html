@@ -2450,7 +2450,7 @@ const projectSummaries = Object.entries(today)
 
 
           {/* 🎯 작품별 목표 대비 진행률 */}
-          <div className={`${darkMode
+          <div id="project-progress-section" className={`${darkMode
             ? "bg-gray-850 text-gray-200 border-gray-700"
             : "bg-white text-gray-900 border-gray-200"} p-4 rounded-lg`}>
 
@@ -2485,6 +2485,12 @@ const updateTarget = (proj, val) => {
               });
 
               const entries = Object.entries(projectTotals).sort((a, b) => b[1] - a[1]);
+              const visibleEntries = entries.filter(([proj, total]) => {
+  const goal = targets[proj] || 0;
+  if (goal <= 0) return true;            // 목표 미설정은 보여줌
+  return total < goal;                    // 목표 달성(=100% 이상)은 숨김
+});
+
 
               if (entries.length === 0) {
                 return <p className="text-gray-500 text-sm">기록된 작품이 없습니다.</p>;
@@ -2492,7 +2498,7 @@ const updateTarget = (proj, val) => {
 
               return (
                 <div className="space-y-4">
-                  {entries.map(([proj, total]) => {
+                  {visibleEntries.map(([proj, total]) => {
                     const goal = targets[proj] || 0;
                     const progress = goal > 0 ? Math.min(100, (total / goal) * 100) : 0;
                     const barColor =
@@ -3287,7 +3293,8 @@ const updateTarget = (proj, val) => {
     const buttons = [
       { id: "top", label: "맨 위" }, // ⬅️ 새로 추가된 버튼
       { id: "log-section", label: "로그" },
-      { id: "goal-section", label: "목표" },
+      { id: "project-progress-section", label: "진행률" },
+      { id: "goal-section", label: "타임라인" },
       { id: "monthly-section", label: "월간" },
       { id: "calendar-section", label: "캘린더" },
       { id: "contract-section", label: "계약" },

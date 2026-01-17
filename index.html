@@ -1406,6 +1406,40 @@ const [activeRoyaltyProject, setActiveRoyaltyProject] = React.useState(null);
       // ✅ 계정별 작품 리스트 (localStorage + Firebase 연동)
       const [projects, setProjects] = React.useState(() => loadProjectsFromLocal());
       const [newProjectName, setNewProjectName] = React.useState("");
+      // ✅ 작품명 변경 (PlannerApp 안에서만!)
+const renameProject = (oldName) => {
+  const newNameRaw = prompt("새 작품명을 입력하세요", oldName);
+  if (newNameRaw === null) return;
+
+  const newName = newNameRaw.trim();
+  if (!newName) return alert("새 작품명이 비어 있어요.");
+  if (newName === oldName) return;
+  if (projects.includes(newName)) return alert("이미 있는 작품명입니다.");
+
+  // 1) 작품 리스트 변경
+  setProjects((prev) => prev.map((p) => (p === oldName ? newName : p)));
+
+  // 2) store 안의 키 이사
+  setStore((prev) => {
+    const copy = JSON.parse(JSON.stringify(prev || {}));
+    Object.keys(copy).forEach((date) => {
+      const dayObj = copy[date];
+      if (!dayObj || typeof dayObj !== "object") return;
+
+      if (dayObj[oldName]) {
+        dayObj[newName] = dayObj[oldName];
+        delete dayObj[oldName];
+      }
+    });
+    return copy;
+  });
+
+  // 3) 현재 선택 작품도 변경
+  setFilterProject(newName);
+
+  alert(`"${oldName}" → "${newName}" 변경 완료`);
+};
+
 
       // 작품 리스트 변경 시 localStorage에 저장
       React.useEffect(() => {
@@ -1842,6 +1876,15 @@ const grouped = {
                   선택 작품 삭제
                 </button>
               )}
+              {filterProject && (
+  <button
+  onClick={() => renameProject(filterProject)}
+  className="px-3 py-2 text-blue-500 border border-blue-300 rounded-lg"
+>
+  ✏️ 작품명 변경
+</button>
+)}
+
             </div>
           </div>
 
@@ -3250,6 +3293,7 @@ const updateTarget = (proj, val) => {
        </div>
       );
     }
+
 
     window.PlannerApp = PlannerApp;
 

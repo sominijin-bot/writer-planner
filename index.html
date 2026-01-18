@@ -20,26 +20,43 @@
 </head>
 
 <body>
-<!-- 🌙✨ 왼쪽 고정 메모 패널 -->
+
+<!-- 🌙✨ 왼쪽 고정 패널 -->
 <div
   id="quick-memo"
-  class="fixed top-20 left-5 w-52 h-[80vh] overflow-hidden p-3 rounded-lg shadow-lg
-         z-50 hidden sm:block
+  class="fixed top-20 left-5 w-75 h-[80vh] p-3 rounded-lg shadow-lg
+         z-50 hidden sm:flex flex-col gap-3
          bg-white text-gray-900
          dark:bg-gray-800 dark:text-gray-100
          border border-gray-300 dark:border-gray-700"
 >
-  <h3 class="text-sm font-semibold mb-2 text-indigo-600 dark:text-indigo-300">
-    ✏️ 빠른 메모
-  </h3>
+  <!-- 🧩 오늘 할 일 (상단) -->
+  <div
+  class="shrink-0 w-full p-2 rounded-lg
+         bg-gray-100 dark:bg-gray-700
+         border border-gray-300 dark:border-gray-600"
+>
+    <div class="text-sm font-semibold mb-1 text-indigo-600 dark:text-indigo-300">
+      🧩 오늘 할 일
+    </div>
+    <div id="today-todo-slot" class="w-full"></div>
+  </div>
 
-  <textarea
-  id="quickMemoInput"
-  class="quick-memo w-full h-full resize-none overflow-y-auto p-2 rounded border text-sm
-         bg-gray-50 dark:bg-gray-700
-         border-gray-300 dark:border-gray-600
-         text-gray-900 dark:text-gray-100"
-></textarea>
+  <!-- ✏️ 빠른 메모 (하단) -->
+  <div class="flex-1 flex flex-col">
+    <h3 class="text-sm font-semibold mb-1 text-indigo-600 dark:text-indigo-300">
+      ✏️ 빠른 메모
+    </h3>
+
+    <textarea
+      id="quickMemoInput"
+      class="quick-memo flex-1 resize-none overflow-y-auto p-2 rounded border text-sm
+             bg-gray-50 dark:bg-gray-700
+             border-gray-300 dark:border-gray-600
+             text-gray-900 dark:text-gray-100"
+      placeholder="지금 떠오른 생각을 그냥 던져놔도 돼"
+    ></textarea>
+  </div>
 </div>
 
 
@@ -335,135 +352,7 @@
       return hh * 60 + mm; // 분 단위
     }
 
-    function CalendarSection({ darkMode }) {
-      const [tasks, setTasks] = React.useState(() => {
-        return JSON.parse(localStorage.getItem("calendar_tasks") || "{}");
-      });
-      const [selectedDate, setSelectedDate] = React.useState(null);
-
-
-      React.useEffect(() => {
-        localStorage.setItem("calendar_tasks", JSON.stringify(tasks));
-      }, [tasks]);
-
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = today.getMonth() + 1;
-      const daysInMonth = new Date(year, month, 0).getDate();
-
-      function handleDateClick(date) {
-        setSelectedDate(date);
-      }
-
-      function handleAddTask() {
-        const text = prompt(`${selectedDate} 일정 내용 입력`);
-        if (!text) return;
-        setTasks((prev) => {
-          const updated = { ...prev };
-          if (!updated[selectedDate]) updated[selectedDate] = [];
-          updated[selectedDate].push(text);
-          return updated;
-        });
-      }
-
-      function handleEditTask(idx) {
-        const newText = prompt("수정할 내용 입력", tasks[selectedDate][idx]);
-        if (!newText) return;
-        setTasks((prev) => {
-          const updated = { ...prev };
-          updated[selectedDate][idx] = newText;
-          return updated;
-        });
-      }
-
-      function handleDeleteTask(idx) {
-        if (!confirm("정말 삭제할까요?")) return;
-        setTasks((prev) => {
-          const updated = { ...prev };
-          updated[selectedDate].splice(idx, 1);
-          if (updated[selectedDate].length === 0) delete updated[selectedDate];
-          return updated;
-        });
-      }
-
-      return (
-        <div
-          className={`p-4 rounded-lg mb-6 ${darkMode
-              ? "bg-gray-850 text-gray-200 border-gray-700"
-              : "bg-white text-gray-900 border-gray-200"
-            }`}
-        >
-          <h2 className="font-semibold text-lg mb-4">📆 일정 관리</h2>
-
-          <div className="grid grid-cols-7 gap-2">
-            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => {
-              const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-              const hasTask = tasks[dateKey]?.length > 0;
-              return (
-                <div
-                  key={d}
-                  onClick={() => handleDateClick(dateKey)}
-                  className={`p-3 text-center border rounded-lg cursor-pointer hover:bg-blue-100 dark:hover:bg-gray-700 ${hasTask ? "bg-indigo-100 dark:bg-indigo-800" : ""
-                    }`}
-                >
-                  <div className="font-medium">{d}</div>
-                  {hasTask && (
-                    <div className="text-xs text-gray-600 dark:text-gray-300">
-                      {tasks[dateKey].length}건
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {selectedDate && (
-            <div className="mt-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-semibold">{selectedDate}</h3>
-                <button
-                  className="bg-blue-500 text-white px-3 py-1 rounded"
-                  onClick={handleAddTask}
-                >
-                  + 일정 추가
-                </button>
-              </div>
-
-              {tasks[selectedDate]?.length > 0 ? (
-                <ul className="space-y-1">
-                  {tasks[selectedDate].map((t, i) => (
-                    <li
-                      key={i}
-                      className="flex justify-between items-center bg-white dark:bg-gray-700 p-2 rounded shadow-sm"
-                    >
-                      <span>{t}</span>
-                      <div className="space-x-2">
-                        <button
-                          className="text-yellow-600 text-sm"
-                          onClick={() => handleEditTask(i)}
-                        >
-                          수정
-                        </button>
-                        <button
-                          className="text-red-600 text-sm"
-                          onClick={() => handleDeleteTask(i)}
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-500">등록된 일정이 없습니다.</p>
-              )}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-   function RoyaltySection({ darkMode }) {
+    function RoyaltySection({ darkMode }) {
     // 날짜 형식 강제 정규화 (2026-1-5 → 2026-01-05)
 
 
@@ -1399,14 +1288,149 @@ const saveEditGoal = () => {
     </div>
   );
 }
+function TodayTodoWidget({ darkMode }) {
+  const [items, setItems] = React.useState([]);
+
+  const getTodayKey = () => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const loadToday = React.useCallback(() => {
+  const todayKey = getTodayKey();
+
+  // ✅ localStorage에서 최신 캘린더 투두를 직접 읽는다 (새로고침에도 살아남음)
+  const all = JSON.parse(localStorage.getItem("calendar_tasks") || "{}");
+  const raw = all[todayKey] || [];
+
+  const list = raw.map((t) =>
+    typeof t === "string"
+      ? { id: "legacy_" + t, title: t, time: "", remindMin: 0, done: false }
+      : t
+  );
+
+  list.sort((a, b) => {
+    const at = a.time || "99:99";
+    const bt = b.time || "99:99";
+    return at.localeCompare(bt);
+  });
+
+  setItems(list);
+}, []);
+
+  React.useEffect(() => {
+    loadToday();
+
+    // 같은 탭 내에서 갱신을 잡아주기 위해 폴링(가벼움)
+    const t = setInterval(loadToday, 3000);
+
+    // 다른 탭/창에서 바뀌면 storage 이벤트로도 반영
+    const onStorage = (e) => {
+      if (e.key === "calendar_tasks") loadToday();
+    };
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [loadToday]);
+
+  const todayCount = items.length;
+  const doneCount = items.filter((x) => x.done).length;
+  const leftCount = todayCount - doneCount;
+
+  return (
+    <div
+      className={`w-full sm:w-72 rounded-xl border p-3 shadow-sm ${
+        darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-900"
+      }`}
+    >
+      <div className="flex items-center justify-between mb-2">
+               <div className="text-xs opacity-70">
+          {leftCount}개 남음 / {todayCount}개
+        </div>
+      </div>
+
+      {todayCount === 0 ? (
+        <div className="text-sm opacity-70">오늘은 캘린더에 투두가 없어요. (편안…) 😌</div>
+      ) : (
+        <ul className="space-y-2">
+          {items.slice(0, 5).map((t, idx) => (
+            <li key={t.id || idx} className="flex items-start gap-2">
+              <span className="mt-[2px] text-xs opacity-70">{t.time ? t.time : "종일"}</span>
+              <span className={`text-sm ${t.done ? "line-through opacity-60" : ""}`}>
+                {t.title}
+              </span>
+            </li>
+          ))}
+          {items.length > 5 && (
+            <li className="text-xs opacity-70">…외 {items.length - 5}개</li>
+          )}
+        </ul>
+      )}
+
+      <div className="mt-2 text-xs opacity-60">
+        캘린더에 추가한 투두가 자동으로 여기에 떠요.
+      </div>
+    </div>
+  );
+}
+
+
 
     function PlannerApp() {
   const [darkMode, setDarkMode] = React.useState(false);
+  const todoRootRef = React.useRef(null);
+
+React.useEffect(() => {
+  const slot = document.getElementById("today-todo-slot");
+  if (!slot) return;
+
+  if (!todoRootRef.current) {
+    todoRootRef.current = ReactDOM.createRoot(slot);
+  }
+
+  todoRootRef.current.render(<TodayTodoWidget darkMode={darkMode} />);
+}, [darkMode]);
+
 const [activeRoyaltyProject, setActiveRoyaltyProject] = React.useState(null);
       // ✅ 계정별 작품 리스트 (localStorage + Firebase 연동)
       const [projects, setProjects] = React.useState(() => loadProjectsFromLocal());
       const [newProjectName, setNewProjectName] = React.useState("");
       // ✅ 작품명 변경 (PlannerApp 안에서만!)
+      
+// 날짜별 투두 저장소 (localStorage 연동)
+const [calendarTasks, setCalendarTasks] = React.useState(() => {
+  return JSON.parse(localStorage.getItem("calendar_tasks") || "{}");
+});
+
+React.useEffect(() => {
+  localStorage.setItem("calendar_tasks", JSON.stringify(calendarTasks));
+}, [calendarTasks]);
+
+// ✅ 셀 클릭 시 여는 모달 상태
+const [todoModalOpen, setTodoModalOpen] = React.useState(false);
+const [todoModalDate, setTodoModalDate] = React.useState(null);
+
+// ✅ 저장 반영
+React.useEffect(() => {
+  localStorage.setItem("calendar_tasks", JSON.stringify(calendarTasks));
+}, [calendarTasks]);
+
+// ✅ 레거시(문자열)도 안전하게 객체로 승격해서 쓰기
+const normalizeTasks = React.useCallback((raw) => {
+  return (raw || []).map((t) =>
+    typeof t === "string"
+      ? { id: "legacy_" + t, title: t, time: "", remindMin: 0, done: false }
+      : t
+  );
+}, []);
+
+
 const renameProject = (oldName) => {
   const newNameRaw = prompt("새 작품명을 입력하세요", oldName);
   if (newNameRaw === null) return;
@@ -1499,6 +1523,84 @@ const renameProject = (oldName) => {
               ? upd(prev[dateStr] ?? emptyDay())
               : upd,
         }));
+
+      // 🔔 브라우저 알림 권한 요청 버튼(원하면 UI로 노출)
+function requestNotifyPermission() {
+  if (!("Notification" in window)) {
+    alert("이 브라우저는 알림을 지원하지 않아요.");
+    return;
+  }
+  if (Notification.permission === "granted") {
+    alert("이미 알림이 허용되어 있어요 ✅");
+    return;
+  }
+  Notification.requestPermission().then((p) => {
+    if (p === "granted") alert("알림 허용 완료 ✅");
+    else alert("알림이 거부되었어요. (브라우저 설정에서 변경 가능)");
+  });
+}
+
+// 🔔 알림 엔진: 30초마다 앞으로 N분 내 예정된 투두를 찾아서 한번만 띄움
+React.useEffect(() => {
+  if (!("Notification" in window)) return;
+
+  const NOTIFIED_KEY = "calendar_notified_v1";
+  const loadNotified = () => {
+    try { return JSON.parse(localStorage.getItem(NOTIFIED_KEY) || "{}"); }
+    catch { return {}; }
+  };
+  const saveNotified = (obj) => localStorage.setItem(NOTIFIED_KEY, JSON.stringify(obj));
+
+  const interval = setInterval(() => {
+    // 권한 없으면 조용히 패스
+    if (Notification.permission !== "granted") return;
+
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const todayKey = `${yyyy}-${mm}-${dd}`;
+
+    const tasksByDate = JSON.parse(localStorage.getItem("calendar_tasks") || "{}");
+    const listRaw = tasksByDate[todayKey] || [];
+
+    // 문자열/객체 통일
+    const list = listRaw.map((t) => (
+      typeof t === "string"
+        ? { id: "legacy_" + t, title: t, time: "", remindMin: 0, done: false }
+        : t
+    ));
+
+    const notified = loadNotified();
+
+    list.forEach((t) => {
+      if (!t || t.done) return;
+      if (!t.time) return; // 종일은 알림 제외(원하면 바꿔줄게)
+      const [H, M] = (t.time || "").split(":").map(Number);
+      if (!Number.isFinite(H) || !Number.isFinite(M)) return;
+
+      const due = new Date(yyyy, Number(mm) - 1, Number(dd), H, M, 0, 0);
+      const remindAt = new Date(due.getTime() - (Number(t.remindMin || 0) * 60 * 1000));
+
+      // 지금부터 30초 내에 remindAt을 "지나치는" 순간에만
+      const diff = remindAt.getTime() - now.getTime();
+      if (diff <= 30000 && diff >= -30000) {
+        const key = `${todayKey}|${t.id}|${t.time}|${t.title}`;
+        if (notified[key]) return;
+
+        new Notification("🔔 투두 알림", {
+          body: `${t.time} · ${t.title}`,
+        });
+
+        notified[key] = Date.now();
+        saveNotified(notified);
+      }
+    });
+  }, 30000);
+
+  return () => clearInterval(interval);
+}, []);
+
 
       const projectData = day[filterProject] ?? emptyProject();
       const setProjectData = (upd) => {
@@ -1821,6 +1923,13 @@ const grouped = {
                   <option key={p}>{p}</option>
                 ))}
               </select>
+              <button
+  onClick={requestNotifyPermission}
+  className={`px-3 py-2 rounded-lg text-sm ${darkMode ? "bg-gray-700 text-indigo-200" : "bg-white border text-indigo-600"}`}
+>
+  🔔 투두알림 on
+</button>
+
 
               {/* 오른쪽 끝: 라이트/다크모드 버튼 */}
               <button
@@ -1834,6 +1943,7 @@ const grouped = {
                 {darkMode ? "☀️ 라이트모드" : "🌙 다크모드"}
               </button>
             </div>
+            
 
             {/* 2줄차: 작품 추가/삭제 관리 */}
             <div className="flex items-center gap-2 text-sm">
@@ -1887,8 +1997,6 @@ const grouped = {
 
             </div>
           </div>
-
-
 
 
           {/* 🌅 작품별 시작 정보 */}
@@ -2911,28 +3019,20 @@ const updateTarget = (proj, val) => {
                       const color = getColor(value);
                       const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-                      const allEvents = JSON.parse(localStorage.getItem("writer_events") || "{}");
-                      const events = allEvents[key] || [];
+                      const tasksByDate = JSON.parse(localStorage.getItem("calendar_tasks") || "{}");
+
+const dayTasks = normalizeTasks((calendarTasks && calendarTasks[key]) || []);
+
+
 
                       return (
                         <div
                           key={day}
                           onClick={() => {
-                            const title = prompt(
-                              `${year}년 ${month + 1}월 ${day}일 일정 입력\n(빈 칸이면 해당 날짜 일정 삭제)`
-                            );
-                            const current = JSON.parse(localStorage.getItem("writer_events") || "{}");
+  setTodoModalDate(key);      // YYYY-MM-DD
+  setTodoModalOpen(true);
+}}
 
-                            if (title === null) return; // 취소
-                            if (title.trim() === "") {
-                              delete current[key];
-                            } else {
-                              current[key] = [...(current[key] || []), title.trim()];
-                            }
-
-                            localStorage.setItem("writer_events", JSON.stringify(current));
-                            window.location.reload();
-                          }}
                           className={`calendar-day flex flex-col justify-between h-20 rounded-lg p-1 shadow-sm cursor-pointer hover:ring-2 hover:ring-indigo-400 transition ${darkMode
                               ? `${value > 0
                                 ? "bg-gradient-to-b from-indigo-700 to-indigo-900 border border-indigo-600 text-white"
@@ -2945,14 +3045,12 @@ const updateTarget = (proj, val) => {
                         >
                           <div className="text-[11px] font-bold">{day}</div>
 
-                          {events.length > 0 && (
-                            <div
-                              className={`text-[10px] truncate mt-1 font-medium px-1 rounded ${darkMode ? "bg-white/20 text-indigo-100" : "bg-indigo-50 text-indigo-800"
-                                }`}
-                            >
-                              {events[0]}
-                            </div>
-                          )}
+                       {dayTasks.length > 0 && (
+  <div className={`text-[10px] truncate mt-1 font-medium px-1 rounded ${darkMode ? "bg-white/20 text-indigo-100" : "bg-indigo-50 text-indigo-800"}`}>
+    {dayTasks[0]?.time ? `⏰ ${dayTasks[0].time} ` : ""}{dayTasks[0]?.title || ""}
+    {dayTasks.length > 1 ? ` 외 ${dayTasks.length - 1}` : ""}
+  </div>
+)}
 
                           <div className="text-[11px]">{value.toLocaleString()}자</div>
                         </div>
@@ -2970,28 +3068,32 @@ const updateTarget = (proj, val) => {
                   >
                     <h3 className="font-semibold text-indigo-700 mb-2">🗒 이번 달 일정 요약</h3>
                     {(() => {
-                      const allEvents = JSON.parse(localStorage.getItem("writer_events") || "{}");
-                      const monthEvents = Object.entries(allEvents)
-                        .filter(([date]) => {
-                          const d = new Date(date);
-                          return d.getFullYear() === year && d.getMonth() === month;
-                        })
-                        .sort(([a], [b]) => new Date(a) - new Date(b));
+  // calendarTasks: { "YYYY-MM-DD": [ {title,time,...} | "legacy-string" ] }
+  const monthEvents = Object.entries(calendarTasks || {})
+    .map(([date, items]) => [date, normalizeTasks(items)])
+    .filter(([date]) => {
+      const d = new Date(date);
+      return d.getFullYear() === year && d.getMonth() === month;
+    })
+    .sort(([a], [b]) => new Date(a) - new Date(b));
 
-                      if (monthEvents.length === 0)
-                        return <p className="text-gray-500 text-sm">등록된 일정이 없습니다.</p>;
+  if (monthEvents.length === 0)
+    return <p className="text-gray-500 text-sm">등록된 일정이 없습니다.</p>;
 
-                      return (
-                        <ul className="divide-y divide-gray-300">
-                          {monthEvents.map(([date, items]) => (
-                            <li key={date} className="py-1 flex justify-between">
-                              <span className="text-indigo-600 font-medium">{date.slice(5)}</span>
-                              <span className="text-gray-700">{items.join(", ")}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      );
-                    })()}
+  return (
+    <ul className="divide-y divide-gray-300">
+      {monthEvents.map(([date, items]) => (
+        <li key={date} className="py-1 flex justify-between">
+          <span className="text-indigo-600 font-medium">{date.slice(5)}</span>
+          <span className="text-gray-700">
+            {items.map((t) => (t.time ? `${t.time} ${t.title}` : t.title)).join(", ")}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+})()}
+
                   </div>
 
 
@@ -3025,6 +3127,141 @@ const updateTarget = (proj, val) => {
               );
             })()}
           </div>
+          {/* ✅ 날짜별 투두 모달 */}
+{todoModalOpen && todoModalDate && (() => {
+  const list = normalizeTasks(calendarTasks[todoModalDate] || []);
+
+  const close = () => {
+    setTodoModalOpen(false);
+    setTodoModalDate(null);
+  };
+
+  const addTask = () => {
+    const title = prompt("할 일(제목)");
+    if (!title) return;
+
+    const time = prompt("시간 (예: 09:30) / 비우면 종일", "");
+    const remindMinRaw = prompt("몇 분 전에 알림? (0이면 없음)", "0");
+    const remindMin = Math.max(0, Number(remindMinRaw || 0));
+
+    const newTask = {
+      id: Date.now(),
+      title: title.trim(),
+      time: (time || "").trim(),
+      remindMin,
+      done: false,
+    };
+
+    setCalendarTasks((prev) => {
+      const copy = { ...(prev || {}) };
+      copy[todoModalDate] = [...(copy[todoModalDate] || []), newTask];
+      return copy;
+    });
+  };
+
+  const toggleDone = (idx) => {
+    setCalendarTasks((prev) => {
+      const copy = { ...(prev || {}) };
+      const arr = normalizeTasks(copy[todoModalDate] || []);
+      arr[idx] = { ...arr[idx], done: !arr[idx].done };
+      copy[todoModalDate] = arr;
+      return copy;
+    });
+  };
+
+  const editTask = (idx) => {
+    const cur = list[idx];
+    const newTitle = prompt("제목 수정", cur.title);
+    if (!newTitle) return;
+    const newTime = prompt("시간 수정 (비우면 종일)", cur.time || "");
+    const newRemind = prompt("알림(분) 수정 (0이면 없음)", String(cur.remindMin || 0));
+
+    setCalendarTasks((prev) => {
+      const copy = { ...(prev || {}) };
+      const arr = normalizeTasks(copy[todoModalDate] || []);
+      arr[idx] = {
+        ...arr[idx],
+        title: newTitle.trim(),
+        time: (newTime || "").trim(),
+        remindMin: Math.max(0, Number(newRemind || 0)),
+      };
+      copy[todoModalDate] = arr;
+      return copy;
+    });
+  };
+
+  const delTask = (idx) => {
+    if (!confirm("삭제할까요?")) return;
+    setCalendarTasks((prev) => {
+      const copy = { ...(prev || {}) };
+      const arr = normalizeTasks(copy[todoModalDate] || []);
+      arr.splice(idx, 1);
+      if (arr.length === 0) delete copy[todoModalDate];
+      else copy[todoModalDate] = arr;
+      return copy;
+    });
+  };
+
+  // 시간순 정렬(종일은 아래)
+  const sorted = [...list].sort((a, b) => {
+    const at = a.time || "99:99";
+    const bt = b.time || "99:99";
+    return at.localeCompare(bt);
+  });
+
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 p-4">
+      <div className={`w-full max-w-lg rounded-xl p-4 shadow-xl border ${
+        darkMode ? "bg-gray-850 text-gray-100 border-gray-700" : "bg-white text-gray-900 border-gray-200"
+      }`}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-semibold">📌 {todoModalDate} 일정</div>
+          <button onClick={close} className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700">
+            닫기
+          </button>
+        </div>
+
+        <div className="flex justify-end mb-3">
+          <button onClick={addTask} className="bg-blue-500 text-white px-3 py-1 rounded">
+            + 투두 추가
+          </button>
+        </div>
+
+        {sorted.length === 0 ? (
+          <div className="text-sm opacity-70">아직 등록된 투두가 없어요.</div>
+        ) : (
+          <ul className="space-y-2">
+            {sorted.map((t, i) => (
+              <li key={t.id || i} className={`p-2 rounded border ${
+                darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
+              }`}>
+                <div className="flex items-start justify-between gap-2">
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" checked={!!t.done} onChange={() => toggleDone(i)} />
+                    <div>
+                      <div className={`${t.done ? "line-through opacity-60" : ""}`}>
+                        {t.time ? `[${t.time}] ` : "[종일] "}{t.title}
+                      </div>
+                      <div className="text-xs opacity-70">
+                        {t.remindMin ? `🔔 ${t.remindMin}분 전 알림` : "🔕 알림 없음"}
+                      </div>
+                    </div>
+                  </label>
+
+                  <div className="flex gap-2">
+                    <button className="text-yellow-600 text-sm" onClick={() => editTask(i)}>수정</button>
+                    <button className="text-red-600 text-sm" onClick={() => delTask(i)}>삭제</button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+})()}
+
 
   
       {/* 📜 계약 관리 섹션 */}
@@ -3294,6 +3531,138 @@ const updateTarget = (proj, val) => {
       );
     }
 
+function TodoModal({ open, dateKey, onClose, darkMode, calendarTasks, setCalendarTasks }) {
+  const [title, setTitle] = React.useState("");
+  const [time, setTime] = React.useState("");
+  const [remindMin, setRemindMin] = React.useState(10);
+
+  React.useEffect(() => {
+    if (open) {
+      setTitle("");
+      setTime("");
+      setRemindMin(10);
+    }
+  }, [open]);
+
+  if (!open || !dateKey) return null;
+
+  const list = calendarTasks[dateKey] || [];
+
+  const addTask = () => {
+    const t = title.trim();
+    if (!t) return;
+
+    const newTask = {
+      id: Date.now(),
+      title: t,
+      time: (time || "").trim(),      // ""이면 종일
+      remindMin: Math.max(0, Number(remindMin || 0)),
+      done: false,
+    };
+
+    setCalendarTasks((prev) => {
+      const copy = { ...prev };
+      copy[dateKey] = [...(copy[dateKey] || []), newTask];
+      return copy;
+    });
+
+    setTitle("");
+    setTime("");
+    setRemindMin(10);
+  };
+
+  const toggleDone = (id) => {
+    setCalendarTasks((prev) => {
+      const copy = { ...prev };
+      copy[dateKey] = (copy[dateKey] || []).map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+      return copy;
+    });
+  };
+
+  const delTask = (id) => {
+    setCalendarTasks((prev) => {
+      const copy = { ...prev };
+      const next = (copy[dateKey] || []).filter((t) => t.id !== id);
+      if (next.length === 0) delete copy[dateKey];
+      else copy[dateKey] = next;
+      return copy;
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50">
+      <div className={`w-[92vw] max-w-lg rounded-xl p-4 shadow-xl border ${darkMode ? "bg-gray-900 text-gray-100 border-gray-700" : "bg-white text-gray-900 border-gray-200"}`}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-semibold">📅 {dateKey} 일정</div>
+          <button onClick={onClose} className="px-3 py-1 rounded bg-gray-200 text-gray-900">닫기</button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+          <input
+            className={`px-3 py-2 rounded border ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-300"}`}
+            placeholder="할 일"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <input
+            className={`px-3 py-2 rounded border ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-300"}`}
+            placeholder="시간(예: 09:30)"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+          />
+          <input
+            type="number"
+            className={`px-3 py-2 rounded border ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-300"}`}
+            placeholder="알림(분)"
+            value={remindMin}
+            onChange={(e) => setRemindMin(e.target.value)}
+            min={0}
+          />
+        </div>
+
+        <button onClick={addTask} className="w-full mb-3 px-3 py-2 rounded bg-indigo-600 text-white">
+          + 추가
+        </button>
+
+        <div className={`max-h-[45vh] overflow-y-auto rounded border ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
+          {list.length === 0 ? (
+            <div className="p-3 text-sm opacity-70">등록된 일정이 없습니다.</div>
+          ) : (
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              {list.map((t) => (
+                <li key={t.id} className="p-3 flex items-center justify-between gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={!!t.done} onChange={() => toggleDone(t.id)} />
+                    <div>
+                      <div className={t.done ? "line-through opacity-60" : ""}>
+                        {t.time ? `⏰ ${t.time} ` : ""}{t.title}
+                      </div>
+                      <div className="text-xs opacity-70">
+                        {t.remindMin ? `🔔 ${t.remindMin}분 전` : "🔕 알림 없음"}
+                      </div>
+                    </div>
+                  </label>
+                  <button onClick={() => delTask(t.id)} className="text-rose-500 text-sm">삭제</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="mt-3 text-xs opacity-60">
+          이 날짜에 넣은 투두는 캘린더 셀에도 첫 항목이 미리보기로 떠요.
+        </div>
+      </div>
+      <TodoModal
+  open={todoModalOpen}
+  dateKey={todoModalDate}
+  onClose={() => setTodoModalOpen(false)}
+  darkMode={darkMode}
+/>
+    </div>
+  );
+}
+
 
     window.PlannerApp = PlannerApp;
 
@@ -3313,6 +3682,12 @@ const updateTarget = (proj, val) => {
       messagingSenderId: "590639652717",
       appId: "1:590639652717:web:bc69fa99d82f6c5e760464"
     };
+const normalizeTasks = (raw) =>
+  (raw || []).map((t, idx) =>
+    typeof t === "string"
+      ? { id: "legacy_" + idx, title: t, time: "", remindMin: 0, done: false }
+      : t
+  );
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -3334,6 +3709,7 @@ const updateTarget = (proj, val) => {
       "fixed bottom-24 right-5 flex flex-col gap-3 items-end z-50";
 
     // 버튼 목록 정의
+    
     const buttons = [
       { id: "top", label: "맨 위" }, // ⬅️ 새로 추가된 버튼
       { id: "log-section", label: "로그" },
@@ -3387,8 +3763,44 @@ const updateTarget = (proj, val) => {
   if (cloudData.contracts)
     localStorage.setItem("writer_contracts_v1", JSON.stringify(cloudData.contracts));
 
-  if (cloudData.calendar)
-    localStorage.setItem("calendar_tasks", JSON.stringify(cloudData.calendar));
+  // ✅ 캘린더는 "클라우드로 덮어쓰기" 금지! 로컬과 병합해서 보존
+{
+  const localCal = JSON.parse(localStorage.getItem("calendar_tasks") || "{}");
+  const cloudCal = cloudData.calendar || {};
+
+  const merged = (() => {
+    const out = { ...cloudCal };
+
+    const normalize = (arr) =>
+      (arr || []).map((t, idx) =>
+        typeof t === "string"
+          ? { id: "legacy_" + idx, title: t, time: "", remindMin: 0, done: false }
+          : t
+      );
+
+    const dedup = (arr) => {
+      const seen = new Set();
+      return arr.filter((t) => {
+        const key = `${t.title || ""}||${t.time || ""}||${t.remindMin ?? ""}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    };
+
+    // 로컬 키를 기준으로 cloud와 합치되, 중복은 제거
+    for (const [date, localArr] of Object.entries(localCal || {})) {
+      const a = normalize(out[date]);
+      const b = normalize(localArr);
+      out[date] = dedup([...a, ...b]);
+    }
+
+    return out;
+  })();
+
+  localStorage.setItem("calendar_tasks", JSON.stringify(merged));
+}
+
 
   if (cloudData.royalties) {
     const local = JSON.parse(localStorage.getItem("writer_royalties") || "[]");
@@ -3454,6 +3866,15 @@ localStorage.setItem("writer_royalties", JSON.stringify(merged));
   </script>
 
 <script>
+  function getTodayKey(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const da = String(d.getDate()).padStart(2,"0");
+  return y + "-" + m + "-" + da;
+}
+
+
   // 🔹 빠른 메모 자동 저장
   const memoBox = document.getElementById("quickMemoInput");
   const savedMemo = localStorage.getItem("writer_quickmemo") || "";

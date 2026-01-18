@@ -24,12 +24,29 @@
 <!-- 🌙✨ 왼쪽 고정 패널 -->
 <div
   id="quick-memo"
-  class="fixed top-20 left-5 w-75 h-[80vh] p-3 rounded-lg shadow-lg
-         z-50 hidden sm:flex flex-col gap-3
-         bg-white text-gray-900
-         dark:bg-gray-800 dark:text-gray-100
-         border border-gray-300 dark:border-gray-700"
+  class="quick-memo-panel relative !fixed top-20 left-5 w-[320px] max-w-[90vw] h-[80vh] p-3 rounded-lg shadow-lg
+       z-[9999] hidden sm:flex flex-col gap-3
+       bg-white text-gray-900
+       dark:bg-gray-800 dark:text-gray-100
+       border border-gray-300 dark:border-gray-700"
 >
+ <!-- ✅ 사이드 패널 손잡이(토글) -->
+  <button
+  id="quick-memo-toggle"
+  type="button"
+  class="quick-memo-handle absolute -right-4 top-8
+         px-3 py-2 rounded-full
+         bg-gray-600/90 text-white text-sm font-semibold
+         shadow-md backdrop-blur
+         hover:bg-gray-500
+         active:scale-95 transition-all
+         flex items-center justify-center"
+  aria-label="왼쪽 패널 접기/펼치기"
+  title="패널 접기/펼치기"
+>
+❮
+</button>
+
   <!-- 🧩 오늘 할 일 (상단) -->
   <div
   class="shrink-0 w-full p-2 rounded-lg
@@ -61,6 +78,19 @@
 
 
   <style>
+  /* ✅ 왼쪽 패널: 슬라이드 접기/펼치기 */
+#quick-memo {
+  position: fixed !important;
+  top: 5rem;   /* top-20 */
+  left: 1.25rem; /* left-5 */
+  transition: transform 260ms ease;
+  will-change: transform;
+}
+
+/* 닫힘 상태: 패널 전체를 왼쪽으로 밀고, 손잡이(약 28px)만 남김 */
+#quick-memo.is-collapsed {
+  transform: translateX(calc(-100% + 28px));
+}
     /* 🌙 다크모드 전체 배경 및 텍스트 */
     .dark {
       --tw-bg-opacity: 1;
@@ -3977,41 +4007,60 @@ localStorage.setItem("writer_royalties", JSON.stringify(merged));
   </script>
 
 <script>
-  function getTodayKey(){
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  const da = String(d.getDate()).padStart(2,"0");
-  return y + "-" + m + "-" + da;
-}
-
-
-  // 🔹 빠른 메모 자동 저장
-  const memoBox = document.getElementById("quickMemoInput");
-  const savedMemo = localStorage.getItem("writer_quickmemo") || "";
-  memoBox.value = savedMemo;
-
-  memoBox.addEventListener("input", () => {
-    localStorage.setItem("writer_quickmemo", memoBox.value);
-  });
-
-(function () {
-  const textarea = document.getElementById("quickMemoInput");
-  if (!textarea) return;
-
-  const key = "quick_memo_" + getTodayKey();
-
-  // 🔹 불러오기
-  const saved = localStorage.getItem(key);
-  if (saved) {
-    textarea.value = saved;
+  // ✅ 날짜 키
+  function getTodayKey() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${da}`;
   }
 
-  // 🔹 입력 시 저장
-  textarea.addEventListener("input", () => {
-    localStorage.setItem(key, textarea.value);
-  });
-})();
+  // ✅ 빠른 메모 저장/불러오기 (하루 단위)
+  (function () {
+    const textarea = document.getElementById("quickMemoInput");
+    if (!textarea) return;
+
+    const key = "quick_memo_" + getTodayKey();
+
+    const saved = localStorage.getItem(key);
+    if (saved !== null) textarea.value = saved;
+
+    textarea.addEventListener("input", () => {
+      localStorage.setItem(key, textarea.value);
+    });
+  })();
+
+  // ✅ 왼쪽 패널 접기/펼치기
+  (function () {
+    const panel = document.getElementById("quick-memo");
+    const btn = document.getElementById("quick-memo-toggle");
+    if (!panel || !btn) return;
+
+    const LS_KEY = "quick_memo_collapsed";
+
+    function apply(collapsed) {
+      panel.classList.toggle("is-collapsed", collapsed);
+      btn.textContent = collapsed ? "❯" : "❮";
+      btn.title = collapsed ? "패널 펼치기" : "패널 접기";
+      btn.setAttribute(
+        "aria-label",
+        collapsed ? "왼쪽 패널 펼치기" : "왼쪽 패널 접기"
+      );
+    }
+
+    // 초기 상태 복원
+    apply(localStorage.getItem(LS_KEY) === "1");
+
+    // 클릭 토글
+    btn.addEventListener("click", () => {
+      const next = !panel.classList.contains("is-collapsed");
+      apply(next);
+      localStorage.setItem(LS_KEY, next ? "1" : "0");
+    });
+  })();
+</script>
+
 
   // 🔹 로그인 후에도 유지 (React 렌더링 영향 없음)
   window.addEventListener("DOMContentLoaded", () => {

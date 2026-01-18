@@ -1430,6 +1430,59 @@ const normalizeTasks = React.useCallback((raw) => {
   );
 }, []);
 
+// ✅ planner 병합 (로컬 로그가 클라우드 덮어쓰기로 날아가지 않게)
+function dedupLogs(logs) {
+  const seen = new Set();
+  const out = [];
+  for (const l of (logs || [])) {
+    const key = `${l.time || ""}||${l.currentWords ?? ""}||${l.diff ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(l);
+  }
+  return out;
+}
+
+function mergePlanner(localPlanner, cloudPlanner) {
+  const merged = { ...(cloudPlanner || {}) };
+
+  // 날짜 단위 병합
+  for (const [date, localDay] of Object.entries(localPlanner || {})) {
+    const cloudDay = merged[date] || {};
+    const dayOut = { ...cloudDay };
+
+    // 작품 단위 병합
+    for (const [proj, localProjData] of Object.entries(localDay || {})) {
+      const cloudProjData = dayOut[proj] || {};
+      const lp = localProjData || {};
+      const cp = cloudProjData || {};
+
+      const localLogs = Array.isArray(lp.logs) ? lp.logs : [];
+      const cloudLogs = Array.isArray(cp.logs) ? cp.logs : [];
+
+      dayOut[proj] = {
+        ...cp,
+        ...lp, // 기본은 로컬 우선 (방금 찍은 값 살리기)
+        logs: dedupLogs([...cloudLogs, ...localLogs]),
+
+        // 값들은 "있는 쪽" 우선으로 안전하게
+        startTime: lp.startTime || cp.startTime || "",
+        startWords: Number.isFinite(lp.startWords) ? lp.startWords : (cp.startWords || 0),
+        goal: Number.isFinite(lp.goal) ? lp.goal : (cp.goal || 0),
+
+        // memo는 더 긴 쪽 우선(대충이라도 보존)
+        memo:
+          String(lp.memo || "").length >= String(cp.memo || "").length
+            ? (lp.memo || "")
+            : (cp.memo || ""),
+      };
+    }
+
+    merged[date] = dayOut;
+  }
+
+  return merged;
+}
 
 const renameProject = (oldName) => {
   const newNameRaw = prompt("새 작품명을 입력하세요", oldName);
@@ -3740,6 +3793,53 @@ const normalizeTasks = (raw) =>
 
     document.body.appendChild(bookmarkNav);
 
+// ✅ planner 병합을 전역(window)으로 등록해서 어디서든 호출 가능하게 만들기
+window.dedupLogs = function (logs) {
+  const seen = new Set();
+  const out = [];
+  for (const l of (logs || [])) {
+    const key = `${l.time || ""}||${l.currentWords ?? ""}||${l.diff ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(l);
+  }
+  return out;
+};
+
+window.mergePlanner = function (localPlanner, cloudPlanner) {
+  const merged = { ...(cloudPlanner || {}) };
+
+  for (const [date, localDay] of Object.entries(localPlanner || {})) {
+    const cloudDay = merged[date] || {};
+    const dayOut = { ...cloudDay };
+
+    for (const [proj, localProjData] of Object.entries(localDay || {})) {
+      const cloudProjData = dayOut[proj] || {};
+      const lp = localProjData || {};
+      const cp = cloudProjData || {};
+
+      const localLogs = Array.isArray(lp.logs) ? lp.logs : [];
+      const cloudLogs = Array.isArray(cp.logs) ? cp.logs : [];
+
+      dayOut[proj] = {
+        ...cp,
+        ...lp, // 로컬 우선
+        logs: window.dedupLogs([...cloudLogs, ...localLogs]),
+        startTime: lp.startTime || cp.startTime || "",
+        startWords: Number.isFinite(lp.startWords) ? lp.startWords : (cp.startWords || 0),
+        goal: Number.isFinite(lp.goal) ? lp.goal : (cp.goal || 0),
+        memo:
+          String(lp.memo || "").length >= String(cp.memo || "").length
+            ? (lp.memo || "")
+            : (cp.memo || ""),
+      };
+    }
+
+    merged[date] = dayOut;
+  }
+
+  return merged;
+};
 
 
     // 로그인 상태 감시
@@ -3757,8 +3857,19 @@ const normalizeTasks = (raw) =>
         if (snap.exists()) {
           const cloudData = snap.data();
           if (cloudData) {
-  if (cloudData.planner)
-    localStorage.setItem("writer_planner_store_v4", JSON.stringify(cloudData.planner));
+  // ✅ planner는 클라우드로 덮어쓰기 금지! 로컬과 병합해서 보존
+{
+  const localPlanner = JSON.parse(localStorage.getItem("writer_planner_store_v4") || "{}");
+  const cloudPlanner = cloudData.planner || {};
+  const mergedPlanner = window.mergePlanner(localPlanner, cloudPlanner);
+  {
+  const localPlanner = JSON.parse(localStorage.getItem("writer_planner_store_v4") || "{}");
+  const cloudPlanner = cloudData.planner || {};
+  const mergedPlanner = window.mergePlanner(localPlanner, cloudPlanner);
+  localStorage.setItem("writer_planner_store_v4", JSON.stringify(mergedPlanner));
+}
+}
+
 
   if (cloudData.contracts)
     localStorage.setItem("writer_contracts_v1", JSON.stringify(cloudData.contracts));

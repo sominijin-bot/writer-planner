@@ -4070,9 +4070,12 @@ localStorage.setItem("writer_royalties", JSON.stringify(merged));
   })();
 </script>
 
-
+<script>
   // 🔹 로그인 후에도 유지 (React 렌더링 영향 없음)
   window.addEventListener("DOMContentLoaded", () => {
+    const memoBox = document.getElementById("quickMemoInput");
+    if (!memoBox) return;
+
     const saved = localStorage.getItem("writer_quickmemo") || "";
     memoBox.value = saved;
   });

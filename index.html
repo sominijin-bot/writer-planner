@@ -141,6 +141,10 @@
       color: #f3f4f6 !important;
       border-color: #4b5563 !important;
     }
+/* ✏️ 빠른 메모 글자색 – 북마크 톤 */
+.dark #quick-memo textarea {
+  color: #A5B4FC !important; /* indigo-500 */
+}
 
     .dark input::placeholder,
     .dark textarea::placeholder {
@@ -2710,13 +2714,18 @@ const updateTarget = (proj, val) => {
 
               // 각 작품별 총합
               const projectTotals = {};
-              Object.entries(store).forEach(([_, data]) => {
-                Object.entries(data || {}).forEach(([proj, val]) => {
-                  if (!val.logs) return;
-                  const total = val.logs.reduce((s, l) => s + (l.diff || 0), 0);
-                  projectTotals[proj] = (projectTotals[proj] || 0) + total;
-                });
-              });
+
+Object.entries(store).forEach(([_, data]) => {
+  Object.entries(data || {}).forEach(([proj, val]) => {
+    // ✅ 작품 목록에 없는 키는 전부 제외
+    if (!projects.includes(proj)) return;
+    if (!val.logs) return;
+
+    const total = val.logs.reduce((s, l) => s + (l.diff || 0), 0);
+    projectTotals[proj] = (projectTotals[proj] || 0) + total;
+  });
+});
+
 
               const entries = Object.entries(projectTotals).sort((a, b) => b[1] - a[1]);
               const visibleEntries = entries.filter(([proj, total]) => {

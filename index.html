@@ -1585,15 +1585,37 @@ const renameProject = (oldName) => {
 
       // 🧩 데이터 불러오기
       React.useEffect(() => {
-        const raw = localStorage.getItem("writer_planner_store_v4");
-        if (raw) {
-          try {
-            setStore(JSON.parse(raw));
-          } catch (e) {
-            console.error("불러오기 실패:", e);
-          }
-        }
-      }, []);
+  const raw = localStorage.getItem("writer_planner_store_v4");
+  if (!raw) return;
+
+  try {
+    const parsed = JSON.parse(raw);
+
+    // ✅ dailySummary가 객체로 변질된 레거시 데이터 복구
+    Object.entries(parsed || {}).forEach(([d, dayObj]) => {
+      if (!dayObj || typeof dayObj !== "object") return;
+
+      const ds = dayObj.dailySummary;
+
+      if (typeof ds === "object" && ds !== null) {
+        // {text:"..."} 형태면 text 살리고, 아니면 빈 문자열로
+        dayObj.dailySummary = (typeof ds.text === "string") ? ds.text : "";
+      } else if (typeof ds !== "string" && ds != null) {
+        dayObj.dailySummary = "";
+      }
+
+      // 혹시 dailySummary가 "작품처럼" 남아서 logs가 있다면 무조건 문자열로 덮어씀
+      if (dayObj.dailySummary && typeof dayObj.dailySummary !== "string") {
+        dayObj.dailySummary = "";
+      }
+    });
+
+    setStore(parsed);
+    localStorage.setItem("writer_planner_store_v4", JSON.stringify(parsed)); // ✅ 정리본으로 즉시 저장
+  } catch (e) {
+    console.error("불러오기 실패:", e);
+  }
+}, []);
 
       // 💾 저장
       React.useEffect(() => {
@@ -2134,7 +2156,7 @@ const grouped = {
             {(() => {
               const today = store[dateStr] || {};
 const entries = Object.entries(today).filter(
-  ([_, v]) => v && Array.isArray(v.logs)
+  ([k, v]) => k !== "dailySummary" && v && Array.isArray(v.logs)
 );
 
 
@@ -2327,32 +2349,42 @@ const entries = Object.entries(today).filter(
     ? "bg-gray-800 border border-gray-700"
     : "bg-gray-50 border border-gray-200"
 }`}>
-  <input
-    type="text"
-    value={store[dateStr]?.dailySummary || ""}
-    onChange={(e) => {
-      const value = e.target.value;
-      setStore((prev) => ({
-        ...prev,
-        [dateStr]: {
-          ...prev[dateStr],
-          dailySummary: value,
-        },
-      }));
-    }}
-    placeholder="오늘은 어떤 작업을 했어?"
-    className="w-full text-sm px-3 py-2 rounded
-               bg-white dark:bg-gray-700
-               border border-gray-300 dark:border-gray-600
-               text-gray-800 dark:text-gray-100"
-  />
+  {(() => {
+    const rawSummary = store[dateStr]?.dailySummary;
+    const summaryValue =
+      typeof rawSummary === "string"
+        ? rawSummary
+        : (rawSummary?.text ?? "");
+
+    return (
+      <input
+        type="text"
+        value={summaryValue}
+        onChange={(e) => {
+          const value = e.target.value;
+          setStore((prev) => ({
+            ...prev,
+            [dateStr]: {
+              ...prev[dateStr],
+              dailySummary: value, // ✅ 무조건 string
+            },
+          }));
+        }}
+        placeholder="오늘은 어떤 작업을 했어?"
+        className="w-full text-sm px-3 py-2 rounded
+                   bg-white dark:bg-gray-700
+                   border border-gray-300 dark:border-gray-600
+                   text-gray-800 dark:text-gray-100"
+      />
+    );
+  })()}
 </div>
 
   {(() => {
     const today = store[dateStr] || {};
 
 const projectSummaries = Object.entries(today)
-  .filter(([_, data]) => data && Array.isArray(data.logs))
+  .filter(([key, data]) => key !== "dailySummary" && data && Array.isArray(data.logs))
   .map(([proj, data]) => {
     const logs = data.logs;
     const total = logs.reduce((sum, l) => sum + (l.diff || 0), 0);
@@ -2718,6 +2750,7 @@ const updateTarget = (proj, val) => {
 Object.entries(store).forEach(([_, data]) => {
   Object.entries(data || {}).forEach(([proj, val]) => {
     // ✅ 작품 목록에 없는 키는 전부 제외
+    if (proj === "dailySummary") return;
     if (!projects.includes(proj)) return;
     if (!val.logs) return;
 
@@ -3745,12 +3778,30 @@ window.dedupLogs = function (logs) {
 
 window.mergePlanner = function (localPlanner, cloudPlanner) {
   const merged = { ...(cloudPlanner || {}) };
+  const META_KEYS = new Set(["dailySummary"]);
+
+  const normSummary = (x) => {
+    if (typeof x === "string") return x;
+    if (x && typeof x === "object") {
+      if (typeof x.text === "string") return x.text;
+    }
+    return "";
+  };
 
   for (const [date, localDay] of Object.entries(localPlanner || {})) {
     const cloudDay = merged[date] || {};
     const dayOut = { ...cloudDay };
 
+    // ✅ 1) dailySummary는 "작품"이 아니라 "메타"로 별도 병합
+    const lsum = normSummary(localDay?.dailySummary);
+    const csum = normSummary(cloudDay?.dailySummary);
+    dayOut.dailySummary = (lsum.length >= csum.length ? lsum : csum);
+
+    // ✅ 2) 작품 데이터만 병합 (meta key 제외 + 객체만)
     for (const [proj, localProjData] of Object.entries(localDay || {})) {
+      if (META_KEYS.has(proj)) continue;                 // 🔥 핵심: dailySummary 스킵
+      if (!localProjData || typeof localProjData !== "object") continue;
+
       const cloudProjData = dayOut[proj] || {};
       const lp = localProjData || {};
       const cp = cloudProjData || {};
@@ -3760,7 +3811,7 @@ window.mergePlanner = function (localPlanner, cloudPlanner) {
 
       dayOut[proj] = {
         ...cp,
-        ...lp, // 로컬 우선
+        ...lp,
         logs: window.dedupLogs([...cloudLogs, ...localLogs]),
         startTime: lp.startTime || cp.startTime || "",
         startWords: Number.isFinite(lp.startWords) ? lp.startWords : (cp.startWords || 0),

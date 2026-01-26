@@ -716,20 +716,60 @@ const allNonEtcIncome = royalties
         const raw = localStorage.getItem("writer_contracts_v1");
         return raw ? JSON.parse(raw) : [];
       });
+React.useEffect(() => {
+  // ✅ 기존 계약 데이터에 division 필드가 없으면 자동 추가(빈값)
+  const raw = localStorage.getItem("writer_contracts_v1");
+  if (!raw) return;
+
+  const parsed = JSON.parse(raw);
+  const needMigrate = Array.isArray(parsed) && parsed.some(c => c.division === undefined);
+
+  if (needMigrate) {
+    const migrated = parsed.map(c => ({
+      ...c,
+      division: c.division ?? "",  // 기존 기록은 비워두고 나중에 수정 가능
+    }));
+    setContracts(migrated);
+    localStorage.setItem("writer_contracts_v1", JSON.stringify(migrated));
+  }
+}, []);
 
       const emptyContract = {
-        title: "",
-        publisher: "",
-        label: "",
-        contractDate: "",
-        finishDate: "",
-        releaseDate: "",
-        payDay1: "",
-        payDay2: "",
-      };
+  title: "",
+  publisher: "",
+  label: "",
+  division: "단행",     // ✅ 추가: 단행/초단
+  contractDate: "",
+  finishDate: "",
+  releaseDate: "",
+  payDay1: "",
+  payDay2: "",
+};
 
       const [newC, setNewC] = React.useState(emptyContract);
       const [editingIndex, setEditingIndex] = React.useState(null);
+      const [contractYearFilter, setContractYearFilter] = React.useState("ALL");
+      const [divisionFilter, setDivisionFilter] = React.useState("ALL");
+
+      // ✅ 계약일(contractDate) 기준으로 연도 목록 만들기
+const contractYears = React.useMemo(() => {
+  const ys = new Set();
+  (contracts || []).forEach((c) => {
+    const y = (c.contractDate || "").slice(0, 4);
+    if (y) ys.add(y);
+  });
+  return Array.from(ys).sort((a, b) => Number(b) - Number(a)); // 최신 연도 먼저
+}, [contracts]);
+
+// ✅ 필터 적용
+const filteredContracts = React.useMemo(() => {
+  return (contracts || []).filter((c) => {
+    const y = (c.contractDate || "").slice(0, 4);
+    const okYear = contractYearFilter === "ALL" ? true : y === contractYearFilter;
+    const okDiv = divisionFilter === "ALL" ? true : (c.division || "") === divisionFilter;
+    return okYear && okDiv;
+  });
+}, [contracts, contractYearFilter, divisionFilter]);
 
 
       const saveContracts = (data) => {
@@ -757,9 +797,10 @@ const allNonEtcIncome = royalties
       };
 
       const editContract = (i) => {
-        setNewC(contracts[i]);
-        setEditingIndex(i);
-      };
+  const row = contracts[i];
+  setNewC({ ...row, division: row.division ?? "" });
+  setEditingIndex(i);
+};
 
       return (
         <div
@@ -773,27 +814,41 @@ const allNonEtcIncome = royalties
           <div className="space-y-4">
             {/* 입력 폼 */}
             <div className="space-y-3">
-              <div className="grid md:grid-cols-3 gap-4 text-sm">
-                {[
-                  { label: "작품명", key: "title" },
-                  { label: "출판사", key: "publisher" },
-                  { label: "레이블", key: "label" },
-                ].map((f) => (
-                  <div key={f.key} className="flex flex-col">
-                    <label className="text-xs font-semibold text-indigo-300 mb-1">
-                      {f.label}
-                    </label>
-                    <input
-                      type="text"
-                      value={newC[f.key]}
-                      onChange={(e) =>
-                        setNewC({ ...newC, [f.key]: e.target.value })
-                      }
-                      className="p-2 border rounded w-full"
-                    />
-                  </div>
-                ))}
-              </div>
+              <div className="grid md:grid-cols-4 gap-4 text-sm">
+  {[
+    { label: "작품명", key: "title" },
+    { label: "출판사", key: "publisher" },
+    { label: "레이블", key: "label" },
+  ].map((f) => (
+    <div key={f.key} className="flex flex-col">
+      <label className="text-xs font-semibold text-indigo-300 mb-1">
+        {f.label}
+      </label>
+      <input
+        type="text"
+        value={newC[f.key]}
+        onChange={(e) => setNewC({ ...newC, [f.key]: e.target.value })}
+        className="p-2 border rounded w-full"
+      />
+    </div>
+  ))}
+
+  {/* ✅ 구분: 레이블 옆에 찰싹 붙게 그리드 안으로 */}
+  <div className="flex flex-col">
+    <label className="text-xs font-semibold text-indigo-300 mb-1">
+      구분
+    </label>
+    <select
+      value={newC.division || ""}
+      onChange={(e) => setNewC({ ...newC, division: e.target.value })}
+      className="p-2 border rounded w-32"   // ✅ 여기서 폭 조절!
+    >
+      <option value="">선택</option>
+      <option value="단행">단행</option>
+      <option value="초단">초단</option>
+    </select>
+  </div>
+</div>
 
               <div className="grid md:grid-cols-4 gap-4 text-sm">
                 <div className="flex flex-col">
@@ -867,12 +922,60 @@ const allNonEtcIncome = royalties
               </div>
             </div>
 
-            <button
-              onClick={addContract}
-              className="px-4 py-2 bg-indigo-500 text-white rounded-lg text-sm"
-            >
-              {editingIndex !== null ? "✓ 수정 완료" : "+ 계약 추가"}
-            </button>
+            <div className="flex items-center gap-2">
+  <button
+    onClick={addContract}
+    className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg"
+  >
+    + 계약 추가
+  </button>
+
+  <a
+    href="https://docs.google.com/spreadsheets/d/1uicxyse6FYjxxH5EfwkawUP23fXGP1u4obijsusosEk/edit?usp=sharing"
+    target="_blank"
+    rel="noopener noreferrer"
+    className={`px-4 py-2 rounded-lg font-medium ${
+      darkMode
+        ? "bg-gray-700 hover:bg-gray-600 text-white"
+        : "bg-gray-200 hover:bg-gray-300 text-gray-900"
+    }`}
+  >
+    📮 투고 현황
+  </a>
+</div>
+{/* ✅ 필터: 계약 연도 + 구분 */}
+<div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+  <div className="flex items-center gap-2">
+    <span className="text-indigo-300 text-xs font-semibold">계약 연도</span>
+    <select
+      value={contractYearFilter}
+      onChange={(e) => setContractYearFilter(e.target.value)}
+      className="p-2 border rounded w-28"
+    >
+      <option value="ALL">전체</option>
+      {contractYears.map((y) => (
+        <option key={y} value={y}>{y}</option>
+      ))}
+    </select>
+  </div>
+
+  <div className="flex items-center gap-2">
+    <span className="text-indigo-300 text-xs font-semibold">구분</span>
+    <select
+      value={divisionFilter}
+      onChange={(e) => setDivisionFilter(e.target.value)}
+      className="p-2 border rounded w-28"
+    >
+      <option value="ALL">전체</option>
+      <option value="단행">단행</option>
+      <option value="초단">초단</option>
+    </select>
+  </div>
+
+  <div className="text-xs text-gray-400">
+    표시: <b className="text-gray-200">{filteredContracts.length}</b>건
+  </div>
+</div>
 
             {contracts.length === 0 ? (
               <p className="text-sm text-gray-500">등록된 계약이 없습니다.</p>
@@ -883,6 +986,7 @@ const allNonEtcIncome = royalties
                     <th>작품명</th>
                     <th>출판사</th>
                     <th>레이블</th>
+                    <th>구분</th>
                     <th>계약</th>
                     <th>완고</th>
                     <th>출간</th>
@@ -892,11 +996,12 @@ const allNonEtcIncome = royalties
                   </tr>
                 </thead>
                 <tbody>
-                  {contracts.map((c, i) => (
+                  {filteredContracts.map((c, i) => (
                     <tr key={i} className="border-b hover:bg-gray-800">
                       <td>{c.title}</td>
                       <td>{c.publisher}</td>
                       <td>{c.label}</td>
+                      <td>{c.division}</td>
                       <td>{c.contractDate}</td>
                       <td>{c.finishDate}</td>
                       <td>{c.releaseDate}</td>

@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>마감 위험도 계산기</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --bg2:#070a0f;
+      --panel:#111827;
+      --panel2:#0f172a;
+      --tile:#0c1324;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --border:#263244;
+      --accent:#60a5fa;
+      --good:#22c55e;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --chip:#0b1220;
+      --shadow: 0 12px 28px rgba(0,0,0,.35);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+    
+      --bg_grad1: radial-gradient(1200px 600px at 20% -10%, rgba(96,165,250,.15), transparent 60%);
+      --bg_grad2: radial-gradient(900px 500px at 95% 0%, rgba(239,68,68,.10), transparent 55%);
+    }
+
+    /* 라이트 모드: 작업 플래너 느낌 */
+    [data-theme="light"]{
+      --bg:#ffffff;
+      --bg2:#eef2ff;
+      --panel:#ffffff;
+      --panel2:#f3f4f6;
+      --tile:#f7f8ff;
+      --text:#111827;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --accent:#4f46e5;
+      --good:#16a34a;
+      --warn:#d97706;
+      --bad:#dc2626;
+      --chip:#eef2ff;
+      --shadow: 0 10px 22px rgba(17,24,39,.10);
+    
+      --bg_grad1: radial-gradient(1200px 600px at 20% -10%, rgba(37,99,235,.10), transparent 65%);
+      --bg_grad2: radial-gradient(900px 500px at 95% 0%, rgba(245,158,11,.08), transparent 60%);
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 20% -10%, rgba(96,165,250,.18), transparent 60%),
+        radial-gradient(900px 500px at 95% 0%, rgba(239,68,68,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+    }
+
+    .wrap{max-width: 980px; margin: 28px auto 60px; padding: 0 16px;}
+    header{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:16px;}
+    h1{font-size: 20px; margin:0; letter-spacing:-.2px;}
+    .sub{margin:6px 0 0; color:var(--muted); font-size:13px; line-height:1.45;}
+
+    .toggleRow{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
+    .btn{
+      border:1px solid var(--border);
+      color:var(--text);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,0));
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      box-shadow: var(--shadow);
+      font-size:13px;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      font-weight:800;
+    }
+    [data-theme="light"] .btn{
+      background: linear-gradient(180deg, rgba(255,255,255,1), rgba(255,255,255,.70));
+      color: var(--text);
+    }
+    .btn:active{transform: translateY(1px);}
+    [data-theme="light"] .btn{
+      background: linear-gradient(180deg, #ffffff, #f3f4f6);
+      border-color: #d1d5db;
+      box-shadow: 0 8px 16px rgba(17,24,39,.08);
+    }
+
+    .grid{display:grid; grid-template-columns: 360px 1fr; gap:14px;}
+    @media (max-width: 860px){ .grid{grid-template-columns:1fr;} }
+
+    .card{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, var(--panel), rgba(0,0,0,0));
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+    [data-theme="light"] .card{
+      background: linear-gradient(180deg, rgba(255,255,255,1), rgba(255,255,255,.85));
+    }
+    .card h2{margin:0 0 10px; font-size:14px; color:var(--muted); font-weight:900; letter-spacing:.2px;}
+
+    .field{margin:10px 0;}
+    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px; font-weight:800;}
+
+    input, textarea{
+      width:100%;
+      border:1px solid var(--border);
+      background: var(--panel2);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      outline:none;
+    }
+    [data-theme="light"] input, [data-theme="light"] textarea{ background:#fff; }
+
+    input:focus, textarea:focus{
+      border-color: rgba(96,165,250,.55);
+      box-shadow: 0 0 0 3px rgba(96,165,250,.18);
+    }
+    [data-theme="light"] input:focus, [data-theme="light"] textarea:focus{
+      border-color: rgba(79,70,229,.45);
+      box-shadow: 0 0 0 3px rgba(79,70,229,.14);
+    }
+    textarea{min-height: 110px; resize: vertical;}
+
+    .hint{font-size:12px; color:var(--muted); margin-top:6px; line-height:1.45;}
+
+    .kpi{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
+    @media (max-width: 520px){ .kpi{grid-template-columns:1fr;} }
+
+    .tile{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,0));
+      border-radius: 16px;
+      padding: 12px;
+      overflow:hidden;
+    }
+    [data-theme="light"] .tile{
+      background: linear-gradient(180deg, rgba(99,102,241,.08), rgba(255,255,255,0));
+    }
+
+    .tile .t{font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:900;}
+    .tile .v{font-size:18px; font-weight:900; letter-spacing:-.3px; display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;}
+    .mono{font-family:var(--mono);}
+
+    .chip{
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--chip);
+      border:1px solid var(--border);
+      color: var(--text);
+      display:inline-flex;
+      gap:6px;
+      align-items:center;
+      font-weight:900;
+    }
+    [data-theme="light"] .chip{ background:#fff; }
+
+    .diag{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px;}
+    .dot{width:10px; height:10px; border-radius:999px; background: var(--muted); box-shadow: 0 0 0 3px rgba(0,0,0,.12);}
+    [data-theme="light"] .dot{ box-shadow: 0 0 0 3px rgba(17,24,39,.06); }
+
+    .barWrap{margin-top:10px; border:1px solid var(--border); background: var(--panel2); border-radius: 999px; overflow:hidden; height: 14px;}
+    [data-theme="light"] .barWrap{ background:#fff; }
+    .bar{height:100%; width:0%; background: linear-gradient(90deg, var(--accent), rgba(96,165,250,.35)); transition: width .25s ease;}
+
+    .row2{display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;}
+    @media (max-width: 520px){ .row2{grid-template-columns:1fr;} }
+
+    .small{font-size:12px; color:var(--muted); line-height:1.45; margin-top:10px;}
+
+    .alertBox{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,0));
+      border-radius: 16px;
+      padding: 14px;
+    }
+    [data-theme="light"] .alertBox{
+      background: linear-gradient(180deg, rgba(245,158,11,.12), rgba(255,255,255,0));
+    }
+    .alertTitle{font-size:12px; font-weight:900; color:var(--muted); margin-bottom:8px;}
+    .alertText{font-size:18px; font-weight:900; line-height:1.35; letter-spacing:-.2px; margin:0;}
+    .alertSub{margin-top:10px; font-size:12px; color:var(--muted); line-height:1.45;}
+  </style>
+</head>
+<body>
+  <div class="wrap" id="app" data-theme="dark">
+    <header>
+      <div>
+        <h1>🚦 마감 위험도 계산기</h1>
+        <p class="sub">
+          입력은 4개만: <b>마감일</b>, <b>목표</b>, <b>기존 작업량</b>, <b>오늘 작업량</b>.<br/>
+          “예상 완주일”은 <b>오늘 작업량을 매일 유지한다고 가정</b>한 예측이에요.
+        </p>
+      </div>
+      <div class="toggleRow">
+        <button class="btn" id="themeBtn">🌙 다크모드</button>
+        <button class="btn" id="resetBtn">↺ 초기화</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>입력</h2>
+
+        <div class="field">
+          <label for="deadline">마감일</label>
+          <input id="deadline" type="date" />
+          <div class="hint">오늘 기준으로 D-day 계산. (마감일이 오늘이면 D-0)</div>
+        </div>
+
+        <div class="field">
+          <label for="goal">목표 (자)</label>
+          <input id="goal" type="number" min="0" step="1" placeholder="예: 300000" />
+        </div>
+
+        <div class="field">
+          <label for="base">기존 작업량 (자) — 완전원고/누적 등</label>
+          <input id="base" type="number" min="0" step="1" placeholder="예: 230000" />
+        </div>
+
+        <div class="field">
+          <label for="today">오늘 작업량 (자)</label>
+          <input id="today" type="number" min="0" step="1" placeholder="예: 1593" />
+          <div class="hint">오늘 작업량은 “합계”에 포함되어 진행률/남은 분량까지 전부 갱신됩니다.</div>
+        </div>
+
+        <div class="field">
+          <label for="memo">메모</label>
+          <textarea id="memo" placeholder="예: 오늘은 인물 심리에서 막힘 / 내일은 4,000자 이상"></textarea>
+          <div class="hint">메모는 로컬 저장(브라우저에 저장)돼서 새로고침해도 살아있어요.</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>결과</h2>
+
+        <!-- 4번 칩: 결과 상단 -->
+        <div class="diag">
+          <span class="dot" id="diagDot"></span>
+          <span class="chip" id="diagChip">진단: -</span>
+          <span class="chip mono" id="ddayChip">D-day: -</span>
+          <span class="chip mono" id="paceChip">속도: -</span>
+        </div>
+
+        <div class="kpi">
+          <div class="tile">
+            <div class="t">기존 작업량</div>
+            <div class="v"><span id="vBase">-</span><span class="t">자</span></div>
+          </div>
+          <div class="tile">
+            <div class="t">오늘 작업량</div>
+            <div class="v"><span id="vToday">-</span><span class="t">자</span></div>
+          </div>
+          <div class="tile">
+            <div class="t">합계</div>
+            <div class="v"><span id="vTotal">-</span><span class="t">자</span></div>
+          </div>
+          <div class="tile">
+            <div class="t">진행률</div>
+            <div class="v"><span id="vPct">-</span><span class="t">%</span></div>
+            <div class="barWrap"><div class="bar" id="bar"></div></div>
+          </div>
+
+          <div class="tile">
+            <div class="t">목표</div>
+            <div class="v"><span id="vGoal">-</span><span class="t">자</span></div>
+          </div>
+          <div class="tile">
+            <div class="t">남은 분량</div>
+            <div class="v"><span id="vRemain">-</span><span class="t">자</span></div>
+          </div>
+
+          <div class="tile">
+            <div class="t">마감일까지</div>
+            <div class="v"><span id="vDaysLeft">-</span><span class="t">일</span></div>
+          </div>
+          <div class="tile">
+            <div class="t">필요 일일 작업량</div>
+            <div class="v"><span id="vNeedPerDay">-</span><span class="t">자/일</span></div>
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="tile">
+            <div class="t">예상 완주일</div>
+            <div class="v"><span id="vFinish">-</span></div>
+            <div class="hint" id="finishHint">* 오늘 작업량을 매일 유지한다고 가정한 단순 예측이에요.</div>
+          </div>
+
+          <div class="alertBox" id="alertBox">
+            <div class="alertTitle">알림</div>
+            <p class="alertText" id="vNote">-</p>
+            <div class="alertSub" id="noteSub">-</div>
+          </div>
+        </div>
+
+        <div class="small" id="foot">
+          진단 규칙(오늘 속도 기준): ratio = (오늘 작업량 × 남은 날짜) / 남은 분량<br/>
+          • ratio ≥ 1.15 → ✅ 안전 / ratio ≥ 0.90 → ⚠️ 주의 / 그 미만 → 🚨 위험
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function n(v){ const x = Number(v); return Number.isFinite(x) ? x : 0; }
+    function fmtInt(x){ return Math.round(x).toLocaleString("ko-KR"); }
+    function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+    function parseDate(s){
+      if(!s) return null;
+      const [y,m,d] = s.split("-").map(Number);
+      if(!y||!m||!d) return null;
+      return new Date(y, m-1, d);
+    }
+    function startOfDay(dt){ return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
+    function addDays(dt, days){ const x = new Date(dt); x.setDate(x.getDate() + days); return x; }
+    function ymd(dt){
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth()+1).padStart(2,"0");
+      const d = String(dt.getDate()).padStart(2,"0");
+      return `${y}-${m}-${d}`;
+    }
+
+    const app = $("app");
+    const themeBtn = $("themeBtn");
+    const resetBtn = $("resetBtn");
+
+    const inp = {
+      deadline: $("deadline"),
+      goal: $("goal"),
+      base: $("base"),
+      today: $("today"),
+      memo: $("memo"),
+    };
+
+    const out = {
+      diagChip: $("diagChip"),
+      diagDot: $("diagDot"),
+      ddayChip: $("ddayChip"),
+      paceChip: $("paceChip"),
+
+      vGoal: $("vGoal"),
+      vBase: $("vBase"),
+      vToday: $("vToday"),
+      vTotal: $("vTotal"),
+      vPct: $("vPct"),
+      bar: $("bar"),
+
+      vRemain: $("vRemain"),
+      vDaysLeft: $("vDaysLeft"),
+      vNeedPerDay: $("vNeedPerDay"),
+      vFinish: $("vFinish"),
+      finishHint: $("finishHint"),
+
+      vNote: $("vNote"),
+      noteSub: $("noteSub"),
+    };
+
+    const KEY = "deadline_calc_v2_today_based";
+    function load(){
+      try{
+        const raw = localStorage.getItem(KEY);
+        if(!raw) return;
+        const s = JSON.parse(raw);
+        if(s.theme) app.setAttribute("data-theme", s.theme);
+        if(s.deadline) inp.deadline.value = s.deadline;
+        if(s.goal != null) inp.goal.value = s.goal;
+        if(s.base != null) inp.base.value = s.base;
+        if(s.today != null) inp.today.value = s.today;
+        if(s.memo != null) inp.memo.value = s.memo;
+      }catch(e){}
+      syncThemeBtn();
+    }
+    function save(){
+      const s = {
+        theme: app.getAttribute("data-theme"),
+        deadline: inp.deadline.value || "",
+        goal: inp.goal.value || "",
+        base: inp.base.value || "",
+        today: inp.today.value || "",
+        memo: inp.memo.value || "",
+      };
+      localStorage.setItem(KEY, JSON.stringify(s));
+    }
+    function syncThemeBtn(){
+      const t = app.getAttribute("data-theme");
+      themeBtn.textContent = (t === "light") ? "🌙 다크모드" : "☀️ 라이트모드";
+    }
+
+    function compute(){
+      const goal = n(inp.goal.value);
+      const base = n(inp.base.value);
+      const today = n(inp.today.value);
+
+      const total = base + today;
+      const remain = Math.max(goal - total, 0);
+
+      const now = startOfDay(new Date());
+      const dl = parseDate(inp.deadline.value);
+
+      let daysLeft = null;
+      if(dl){
+        daysLeft = Math.round((startOfDay(dl).getTime() - now.getTime()) / (1000*60*60*24));
+      }
+
+      const needPerDay = (daysLeft !== null && daysLeft > 0)
+        ? (remain / daysLeft)
+        : (remain > 0 ? Infinity : 0);
+
+      // 예상 완주일: 오늘 작업량을 매일 유지한다고 가정
+      let finish = "-";
+      let finishDate = null;
+      if(goal <= 0){
+        finish = "-";
+      } else if(remain === 0){
+        finish = "완료";
+      } else if(today <= 0){
+        finish = "∞";
+      } else {
+        const daysToFinish = Math.ceil(remain / today);
+        finishDate = addDays(now, daysToFinish);
+        finish = ymd(finishDate);
+      }
+
+      let dText = "-";
+      if(daysLeft !== null){
+        dText = (daysLeft >= 0) ? `D-${daysLeft}` : `D+${Math.abs(daysLeft)}`;
+      }
+
+      // ratio = (today*daysLeft)/remain
+      let ratio = 0;
+      if(remain === 0){
+        ratio = 999;
+      } else if(daysLeft === null || daysLeft <= 0){
+        ratio = 0;
+      } else {
+        ratio = (today * daysLeft) / remain;
+      }
+
+      let level="•", label="-", note="-", noteColor="var(--muted)";
+
+      if(goal <= 0 || !dl){
+        level="⚠️"; label="설정필요"; note="마감일/목표를 먼저 넣어 주세요."; noteColor="var(--warn)";
+      } else if(remain === 0){
+        level="✅"; label="완료"; note="끝. 완주. 승리."; noteColor="var(--good)";
+      } else if(daysLeft !== null && daysLeft < 0){
+        level="🚨"; label="기한초과"; note="마감이 이미 지났어요."; noteColor="var(--bad)";
+      } else if(daysLeft === 0){
+        level="🚨"; label="오늘 마감"; note="오늘이 마감인데 아직 남았어요."; noteColor="var(--bad)";
+      } else if(today <= 0){
+        level="🚨"; label="위험"; note="오늘 작업량이 0이면, 예상 완주일은 ∞가 됩니다."; noteColor="var(--bad)";
+      } else {
+        if (ratio >= 1.15) { level="✅"; label="안전"; note="현재 속도면 여유가 있어요."; noteColor="var(--good)"; }
+        else if (ratio >= 0.90) { level="⚠️"; label="주의"; note="지금 속도면 아슬아슬해요."; noteColor="var(--warn)"; }
+        else { level="🚨"; label="위험"; note="현재 속도면 마감이 깨질 가능성이 커요."; noteColor="var(--bad)"; }
+      }
+
+      let sub = "";
+      if(finishDate && dl){
+        const lateDays = Math.round((startOfDay(finishDate).getTime() - startOfDay(dl).getTime()) / (1000*60*60*24));
+        if(lateDays > 0){
+          sub = `예상 완주일이 마감일보다 <b>${lateDays}일</b> 늦어요. (슬픔 감지 🥲)`;
+          if(level !== "✅") noteColor = "var(--bad)";
+        } else {
+          sub = `예상 완주일이 마감일보다 <b>${Math.abs(lateDays)}일</b> 빨라요.`;
+        }
+      } else if(finish === "∞"){
+        sub = `오늘 속도가 0이라서 예상 완주일이 무한대로 떠요.`;
+      } else if(!dl){
+        sub = `마감일을 넣으면 D-day/필요 속도/슬픔 판정이 살아나요.`;
+      } else {
+        sub = `오늘 속도를 바꾸면 예상 완주일이 바로 움직여요.`;
+      }
+
+      out.vGoal.textContent = goal ? fmtInt(goal) : "-";
+      out.vBase.textContent = fmtInt(base);
+      out.vToday.textContent = fmtInt(today);
+      out.vTotal.textContent = fmtInt(total);
+      out.vRemain.textContent = goal ? fmtInt(remain) : "-";
+      out.vDaysLeft.textContent = (daysLeft === null) ? "-" : String(daysLeft);
+
+      out.vNeedPerDay.textContent = (!goal || daysLeft === null)
+        ? "-"
+        : (needPerDay === Infinity ? "∞" : fmtInt(needPerDay));
+
+      const pct = (goal > 0) ? (total / goal * 100) : 0;
+      const pctShown = (goal > 0) ? clamp(pct, 0, 999) : 0;
+      out.vPct.textContent = (goal > 0) ? pctShown.toFixed(1) : "-";
+      out.bar.style.width = (goal > 0) ? clamp(pct, 0, 100).toFixed(1) + "%" : "0%";
+
+      out.ddayChip.textContent = `D-day: ${dText}`;
+      out.paceChip.textContent = `속도: ${today ? fmtInt(today) : 0}자/일`;
+
+      out.vFinish.textContent = finish;
+      out.finishHint.innerHTML = `* “오늘 작업량(<b>${fmtInt(today)}</b>자/일)”을 매일 유지한다고 가정한 단순 예측이에요.`;
+
+      out.diagChip.textContent = `진단: ${level} ${label}`;
+      out.diagChip.style.borderColor = noteColor;
+      out.diagDot.style.background = noteColor;
+
+      out.vNote.textContent = note;
+      out.vNote.style.color = noteColor;
+      out.noteSub.innerHTML = sub;
+
+      save();
+    }
+
+    function toggleTheme(){
+      const cur = app.getAttribute("data-theme");
+      app.setAttribute("data-theme", cur === "light" ? "dark" : "light");
+      syncThemeBtn();
+      save();
+    }
+    function resetAll(){
+      localStorage.removeItem(KEY);
+      inp.deadline.value = "";
+      inp.goal.value = "";
+      inp.base.value = "";
+      inp.today.value = "";
+      inp.memo.value = "";
+      app.setAttribute("data-theme", "dark");
+      syncThemeBtn();
+      compute();
+    }
+
+    themeBtn.addEventListener("click", () => { toggleTheme(); compute(); });
+    resetBtn.addEventListener("click", resetAll);
+
+    Object.values(inp).forEach(el => {
+      el.addEventListener("input", compute);
+      el.addEventListener("change", compute);
+    });
+
+    load();
+    compute();
+  </script>
+</body>
+</html>

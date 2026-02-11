@@ -347,16 +347,31 @@
       "이 꽃의 주인은 누구?",
       "기타"
     ];
+// ✅ 작품명: 공백 제거 + 중복 제거 + 오름차순 정렬 (ko 기준)
+function sortProjects(list) {
+  const cleaned = (list || [])
+    .map((x) => String(x || "").trim())
+    .filter(Boolean);
+
+  const uniq = Array.from(new Set(cleaned));
+
+  // "기타"는 맨 아래로 두고 싶으면 유지 (원치 않으면 아래 3줄 지우면 됨)
+  const lastPinned = ["기타"];
+  const core = uniq.filter((p) => !lastPinned.includes(p)).sort((a, b) => a.localeCompare(b, "ko"));
+  const pinned = lastPinned.filter((p) => uniq.includes(p));
+
+  return [...core, ...pinned];
+}
 
     // ✅ localStorage에서 작품 리스트 불러오기
     function loadProjectsFromLocal() {
       try {
         const saved = JSON.parse(localStorage.getItem("writer_projects") || "[]");
-        if (Array.isArray(saved) && saved.length > 0) return saved;
+        if (Array.isArray(saved) && saved.length > 0) return sortProjects(saved);
       } catch (e) {
         console.error("writer_projects 로드 실패:", e);
       }
-      return DEFAULT_PROJECTS;
+      return sortProjects(DEFAULT_PROJECTS);
     }
 
 
@@ -1634,9 +1649,9 @@ const renameProject = (oldName) => {
 
   // ✅ (A) 작품 리스트 변경: 혹시 모를 중복도 제거
   setProjects((prev) => {
-    const next = prev.map((p) => (p === oldName ? newName : p));
-    return Array.from(new Set(next));
-  });
+  const next = prev.map((p) => (p === oldName ? newName : p));
+  return sortProjects(next);
+});
 
   // ✅ (B) 목표(writer_targets)도 같이 이사
   try {
@@ -2254,8 +2269,9 @@ const grouped = {
                   const name = newProjectName.trim();
                   if (!name) return alert("작품명을 입력해주세요.");
                   if (projects.includes(name)) return alert("이미 있는 작품명입니다.");
-                  const updated = [...projects, name];
-                  setProjects(updated);
+                  const updated = sortProjects([...projects, name]);
+setProjects(updated);
+
                   setNewProjectName("");
                   if (!filterProject) setFilterProject(name);
                 }}
@@ -2268,8 +2284,9 @@ const grouped = {
                   onClick={() => {
                     if (!confirm(`'${filterProject}' 작품을 목록에서 삭제할까요?\n(기존 집필 기록은 남아 있지만, 새로 선택은 할 수 없어요.)`))
                       return;
-                    const updated = projects.filter((p) => p !== filterProject);
-                    setProjects(updated);
+                    const updated = sortProjects(projects.filter((p) => p !== filterProject));
+setProjects(updated);
+
                     if (updated.length > 0) {
                       setFilterProject(updated[0]);
                     } else {
